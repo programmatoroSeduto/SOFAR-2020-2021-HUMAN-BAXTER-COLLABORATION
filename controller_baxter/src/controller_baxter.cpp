@@ -8,34 +8,34 @@
 #include <moveit_msgs/RobotState.h>
 #include "iostream"
 #include <tf/tf.h>
+
 //NAMESPACES
 using namespace std;
 using namespace moveit;
 using namespace planning_interface;
 using namespace geometry_msgs;
+
 //GLOBAL VARIABLES
 MoveGroupInterface *right_arm;
 //MoveGroupInterface *left_arm;
 //MoveGroupInterface *both_arms;
 ros::Publisher trajectory_pub;
 sensor_msgs::JointState messaggio_joint;
-Pose target_block,red_box_pose;
-
+Pose target_block,red_box_pose,blue_box_pose,A_red,B_red,C_blue,D_red,E_blue,F_red,G_blue,H_red,I_blue,L_red,M_blue;
 
 //SUBSCRIBER CALLBACKS
 void tf_callback(const human_baxter_collaboration::UnityTf& msg);
 void update_joints_callback(const sensor_msgs::JointState& msg );
+
+//FUNCTIONS
+void print_all_joints();
+double rad_to_grad(double rad);
 void move_to_pose(geometry_msgs::Pose pt, bool Orientamento);
 void update_start_state();
 void stampa_Pose(Pose po);
 void move_to_waypoints(vector<Pose> waypoints);
 void prova();
 
-
-
-//FUNCTIONS
-void print_all_joints();
-double rad_to_grad(double rad);
 
 int main(int argc, char** argv)
 {
