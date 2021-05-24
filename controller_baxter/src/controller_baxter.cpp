@@ -79,9 +79,7 @@ do{
   cout<<"Inserisci una delle seguenti scelte:\n 0)chiudi\n 1)Muovi \nChoice:";
   cin>>choice;
   if(choice=="1"){
-
     move_block_to_box("M",&movegroup_left);
-
   }
   if(choice=="2"){
     move_block_to_switchpoint("M",&movegroup_right);
@@ -224,6 +222,16 @@ Pose pose_of_block(string block_name){
     return C_blue;
 
   }
+  if(block_name=="G"){
+
+    return G_blue;
+
+  }
+  if(block_name=="I"){
+
+    return I_blue;
+
+  }
   else {
     ROS_INFO("ERROR, no block string found");
     return M_blue;
@@ -268,6 +276,16 @@ void tf_callback(const human_baxter_collaboration::UnityTf& msg)
     if(msg.frames[i].header.frame_id=="M"){
 
       M_blue=msg.frames[i].pose;
+
+    }
+    if(msg.frames[i].header.frame_id=="G"){
+
+      G_blue=msg.frames[i].pose;
+
+    }
+    if(msg.frames[i].header.frame_id=="I"){
+
+      I_blue=msg.frames[i].pose;
 
     }
     if(msg.frames[i].header.frame_id=="C"){
