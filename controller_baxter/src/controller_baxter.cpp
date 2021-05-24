@@ -4,6 +4,7 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <human_baxter_collaboration/BaxterTrajectory.h>
 #include <human_baxter_collaboration/UnityTf.h>
+#include <controller_baxter/command.h>
 #include <sensor_msgs/JointState.h>
 #include <moveit_msgs/RobotState.h>
 #include "iostream"
@@ -27,20 +28,21 @@ Pose target_block,red_box_pose,blue_box_pose,A_red,B_red,C_blue,D_red,E_blue,F_r
 void tf_callback(const human_baxter_collaboration::UnityTf& msg);
 void update_joints_callback(const sensor_msgs::JointState& msg );
 
+
+//SERVICES
+bool server_callback(controller_baxter::command::Request &req,controller_baxter::command::Response &res);
+
 //FUNCTIONS
 void print_all_joints();
 double rad_to_grad(double rad);
 void move_to_pose(geometry_msgs::Pose pt, bool Orientamento);
 void stampa_Pose(Pose po);
 void move_to_waypoints(vector<Pose> waypoints);
-void move_block_to_box(string block_name,MoveGroupInterface *group);
+bool move_block_to_box(string block_name,MoveGroupInterface *group);
 void update_start_state_from_callback();
 void update_start_state_after_trajectory_execution(moveit_msgs::RobotTrajectory last_trajectory,MoveGroupInterface *group);
 Pose pose_of_block(string block_name);
-void move_block_to_switchpoint(string block_name,MoveGroupInterface *group);
-
-
-
+bool move_block_to_switchpoint(string block_name,MoveGroupInterface *group);
 
 int main(int argc, char** argv)
 {
@@ -49,6 +51,7 @@ ros::init(argc, argv, "baxter_controller");
 ros::NodeHandle n;
 ros::Subscriber tf_sub = n.subscribe("unity_tf", 10, tf_callback);
 ros::Subscriber joint_state_sub = n.subscribe("baxter_joint_states", 10, update_joints_callback);
+ros::ServiceServer controller_server = n.advertiseService("controller_server",server_callback);
 trajectory_pub = n.advertise<human_baxter_collaboration::BaxterTrajectory>("baxter_moveit_trajectory", 10);
 static ros::AsyncSpinner spinner(1);
 spinner.start();
@@ -68,27 +71,15 @@ joints_left=movegroup_left.getCurrentJointValues(); //NON FUNZIONA(prende tutti 
 joints_both=movegroup_both.getCurrentJointValues(); //NON FUNZIONA(prende tutti joint a zero)
 
 
+while(ros::ok()){
+ros::spinOnce();
+update_start_state_from_callback();
+}
 
-string choice;
-do{
-
-  ros::spinOnce();
-
-  update_start_state_from_callback();
-
-  cout<<"Inserisci una delle seguenti scelte:\n 0)chiudi\n 1)Muovi \nChoice:";
-  cin>>choice;
-  if(choice=="1"){
-    move_block_to_box("M",&movegroup_left);
-  }
-  if(choice=="2"){
-    move_block_to_switchpoint("M",&movegroup_right);
-  }
-}while(ros::ok()&& choice!="0");
 return 0;
 }
 
-void move_block_to_box(string block_name,MoveGroupInterface *group){
+bool move_block_to_box(string block_name,MoveGroupInterface *group){
   target_block=pose_of_block(block_name);
 
   string arm;
@@ -111,17 +102,21 @@ void move_block_to_box(string block_name,MoveGroupInterface *group){
   group->setPoseTarget(above_target);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
+  if(!success)return false;
+  
   human_baxter_collaboration::BaxterTrajectory my_trajectory;
-  my_trajectory.arm=arm; //MUOVE IL DESTRO!
+  my_trajectory.arm=arm;
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   //arriva un pò sopra
 
   update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
-//setta come start state quello un pò sopra
+  //setta come start state quello un pò sopra
 
   group->setPoseTarget(target_block);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
+  if(!success)return false;
+  
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   //arriva al blocco
 
@@ -131,6 +126,8 @@ void move_block_to_box(string block_name,MoveGroupInterface *group){
   group->setPoseTarget(above_target);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
+  if(!success)return false;
+  
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   //arriva un po più in alto del blocco
 
@@ -140,13 +137,15 @@ void move_block_to_box(string block_name,MoveGroupInterface *group){
   group->setPoseTarget(blue_box_pose);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
+  if(!success)return false;
+  
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
-  //arriva alla red box
-
+  //arriva alla box
 
   trajectory_pub.publish(my_trajectory);
+  return true;
 }
-void move_block_to_switchpoint(string block_name,MoveGroupInterface *group){
+bool move_block_to_switchpoint(string block_name,MoveGroupInterface *group){
 
   ROS_INFO("Trying to execute a trajectory");
   MoveGroupInterface::Plan my_plan;
@@ -170,8 +169,10 @@ void move_block_to_switchpoint(string block_name,MoveGroupInterface *group){
   group->setPoseTarget(above_target);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
+  if(!success)return false;
+  
   human_baxter_collaboration::BaxterTrajectory my_trajectory;
-  my_trajectory.arm=arm; //MUOVE IL DESTRO!
+  my_trajectory.arm=arm; 
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   //arriva un pò sopra
 
@@ -181,6 +182,8 @@ void move_block_to_switchpoint(string block_name,MoveGroupInterface *group){
   group->setPoseTarget(target_block);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
+  if(!success)return false;
+  
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   //arriva al target
 
@@ -190,6 +193,8 @@ void move_block_to_switchpoint(string block_name,MoveGroupInterface *group){
   group->setPoseTarget(above_target);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
+  if(!success)return false;
+  
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   //arriva un po più in alto del target
 
@@ -199,12 +204,13 @@ void move_block_to_switchpoint(string block_name,MoveGroupInterface *group){
   group->setPoseTarget(target_for_harm_switch);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
+  if(!success)return false;
+  
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   //arriva alla red box
 
-
   trajectory_pub.publish(my_trajectory);
-
+  return true;
 }
 Pose pose_of_block(string block_name){
   if(block_name=="E"){
@@ -237,33 +243,7 @@ Pose pose_of_block(string block_name){
     return M_blue;
   }
 }
-/*void move_to_pose(geometry_msgs::Pose pt, bool Orientamento){
-  MoveGroupInterface::Plan my_plan;
-  if(!Orientamento)
-    right_arm->setPositionTarget(pt.position.x,pt.position.y,pt.position.z);
-  else
-    right_arm->setPoseTarget(pt);
 
-  bool success = (right_arm->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
-  human_baxter_collaboration::BaxterTrajectory my_trajectory;
-  my_trajectory.arm="right"; //MUOVE IL DESTRO!
-  my_trajectory.trajectory.push_back(my_plan.trajectory_);
-  trajectory_pub.publish(my_trajectory);
-}*/
-/*void move_to_waypoints(vector<Pose> waypoints){
-
-      MoveGroupInterface::Plan my_plan;
-      human_baxter_collaboration::BaxterTrajectory my_trajectory;
-      moveit_msgs::RobotTrajectory trajectory;
-      right_arm->computeCartesianPath(waypoints,0.001,0,trajectory);
-      //bool success = (right_arm->plan(my_plan) == MoveItErrorCode::SUCCESS);
-      //ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
-      my_trajectory.arm="right"; //MUOVE IL DESTRO!
-      my_trajectory.trajectory.push_back(my_plan.trajectory_);
-      trajectory_pub.publish(my_trajectory);
-
-}*/
 void tf_callback(const human_baxter_collaboration::UnityTf& msg)
 {
 
@@ -331,7 +311,6 @@ void update_joints_callback(const sensor_msgs::JointState& msg)
  left_harm_msg_joint.position.erase(left_harm_msg_joint.position.begin(),left_harm_msg_joint.position.begin()+7);
  left_harm_msg_joint.position.erase(left_harm_msg_joint.position.begin()+7,left_harm_msg_joint.position.begin()+11);
 
-
 }
 /*void print_all_joints()
 {
@@ -347,7 +326,7 @@ double rad_to_grad(double rad)
 return rad*180/3.1415;
 }
 void update_start_state_from_callback(){
-
+  
   //AGGIORNO BRACCIO DESTRO
   robot_state::RobotState start_state(*right_arm->getCurrentState());
   const robot_state::JointModelGroup *joint_model_group =start_state.getJointModelGroup(right_arm->getName());
@@ -380,4 +359,23 @@ void update_start_state_after_trajectory_execution(moveit_msgs::RobotTrajectory 
   const robot_state::JointModelGroup *joint_model_group =start_state.getJointModelGroup(group->getName());
   start_state.setJointGroupPositions(joint_model_group, last_trajectory.joint_trajectory.points[last_trajectory.joint_trajectory.points.size()-1].positions);
   group->setStartState(start_state);
+}
+bool server_callback(controller_baxter::command::Request &req,controller_baxter::command::Response &res){
+  
+  res.ok=false;	
+  static ros::AsyncSpinner spinner_service(1);
+  spinner_service.start();
+  MoveGroupInterface *arm_to_move;
+  if(req.arm=="left") arm_to_move=left_arm;
+  if(req.arm=="right") arm_to_move=right_arm;
+  
+  if(req.pos=="box") 
+  res.ok=move_block_to_box(req.cube,arm_to_move);
+  
+  if(req.pos=="center")
+  res.ok=move_block_to_switchpoint(req.cube,arm_to_move);	
+     
+  spinner_service.stop();	 
+  
+  return true;
 }

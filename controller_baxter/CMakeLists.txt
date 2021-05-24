@@ -19,7 +19,18 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_ros_planning
   moveit_ros_planning_interface
   human_baxter_collaboration
+  message_generation
   )
+
+add_service_files(DIRECTORY srv)
+
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  std_msgs
+  moveit_msgs
+  sensor_msgs
+)
 
 catkin_package()
 

@@ -1,0 +1,5 @@
+string arm
+string pos
+string cube
+---
+bool ok
