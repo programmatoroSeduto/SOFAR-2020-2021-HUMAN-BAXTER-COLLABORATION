@@ -17,7 +17,7 @@ using namespace planning_interface;
 using namespace geometry_msgs;
 
 //GLOBAL VARIABLES
-sensor_msgs::JointState messaggio_joint,left_harm_msg_joint,right_harm_msg_joint;
+sensor_msgs::JointState messaggio_joint,left_arm_msg_joint,right_arm_msg_joint;
 
 //SUBSCRIBER CALLBACKS
 void joints_callback(const sensor_msgs::JointState& msg );
@@ -43,28 +43,28 @@ while(ros::ok()){
 
 void joints_callback(const sensor_msgs::JointState& msg)
 {
- right_harm_msg_joint=msg;
- right_harm_msg_joint.name.erase(right_harm_msg_joint.name.begin());
- right_harm_msg_joint.name.erase(right_harm_msg_joint.name.begin()+7,right_harm_msg_joint.name.begin()+18);
- right_harm_msg_joint.position.erase(right_harm_msg_joint.position.begin());
- right_harm_msg_joint.position.erase(right_harm_msg_joint.position.begin()+7,right_harm_msg_joint.position.begin()+18);
+ right_arm_msg_joint=msg;
+ right_arm_msg_joint.name.erase(right_arm_msg_joint.name.begin());
+ right_arm_msg_joint.name.erase(right_arm_msg_joint.name.begin()+7,right_arm_msg_joint.name.begin()+18);
+ right_arm_msg_joint.position.erase(right_arm_msg_joint.position.begin());
+ right_arm_msg_joint.position.erase(right_arm_msg_joint.position.begin()+7,right_arm_msg_joint.position.begin()+18);
 
- left_harm_msg_joint=msg;
- left_harm_msg_joint.name.erase(left_harm_msg_joint.name.begin());
- left_harm_msg_joint.name.erase(left_harm_msg_joint.name.begin(),left_harm_msg_joint.name.begin()+7);
- left_harm_msg_joint.name.erase(left_harm_msg_joint.name.begin()+7,left_harm_msg_joint.name.begin()+11);
- left_harm_msg_joint.position.erase(left_harm_msg_joint.position.begin());
- left_harm_msg_joint.position.erase(left_harm_msg_joint.position.begin(),left_harm_msg_joint.position.begin()+7);
- left_harm_msg_joint.position.erase(left_harm_msg_joint.position.begin()+7,left_harm_msg_joint.position.begin()+11);
+ left_arm_msg_joint=msg;
+ left_arm_msg_joint.name.erase(left_arm_msg_joint.name.begin());
+ left_arm_msg_joint.name.erase(left_arm_msg_joint.name.begin(),left_arm_msg_joint.name.begin()+7);
+ left_arm_msg_joint.name.erase(left_arm_msg_joint.name.begin()+7,left_arm_msg_joint.name.begin()+11);
+ left_arm_msg_joint.position.erase(left_arm_msg_joint.position.begin());
+ left_arm_msg_joint.position.erase(left_arm_msg_joint.position.begin(),left_arm_msg_joint.position.begin()+7);
+ left_arm_msg_joint.position.erase(left_arm_msg_joint.position.begin()+7,left_arm_msg_joint.position.begin()+11);
 
 }
 
 bool server_callback(controller_baxter::at_home::Request &req,controller_baxter::at_home::Response &res){
 	
- res.ok=false;	
+ res.at_home=false;	
  sensor_msgs::JointState messaggio_joint;
- if(req.arm=="right") messaggio_joint=right_harm_msg_joint;
- if(req.arm=="left")  messaggio_joint=left_harm_msg_joint;
+ if(req.arm=="right") messaggio_joint=right_arm_msg_joint;
+ if(req.arm=="left")  messaggio_joint=left_arm_msg_joint;
  if(req.arm!="left"&& req.arm!="right") return false;
  
  cout<<"joint0: "<<messaggio_joint.position[0]<<endl;
@@ -82,7 +82,7 @@ bool server_callback(controller_baxter::at_home::Request &req,controller_baxter:
  very_close(messaggio_joint.position[4],0) && 
  very_close(messaggio_joint.position[5],0.75) && 
  very_close(messaggio_joint.position[6],0))
-	{res.ok=true;}
+	{res.at_home=true;}
 	
  return true;	
 }

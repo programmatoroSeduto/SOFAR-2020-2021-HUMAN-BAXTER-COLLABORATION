@@ -72,10 +72,11 @@ joints_both=movegroup_both.getCurrentJointValues(); //NON FUNZIONA(prende tutti 
 
 
 while(ros::ok()){
-ros::spinOnce();
+//ros::spinOnce();
 update_start_state_from_callback();
 }
 
+spinner.stop();
 return 0;
 }
 
