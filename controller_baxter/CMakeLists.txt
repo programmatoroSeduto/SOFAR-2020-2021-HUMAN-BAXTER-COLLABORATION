@@ -41,3 +41,7 @@ ${catkin_INCLUDE_DIRS}
 add_executable(controller_baxter src/controller_baxter.cpp)
 target_link_libraries(controller_baxter ${catkin_LIBRARIES})
 add_dependencies(controller_baxter ${catkin_EXPORTED_TARGETS})
+
+add_executable(baxter_at_home src/baxter_at_home.cpp)
+target_link_libraries(baxter_at_home ${catkin_LIBRARIES})
+add_dependencies(baxter_at_home ${catkin_EXPORTED_TARGETS})
