@@ -45,3 +45,7 @@ add_dependencies(controller_baxter ${catkin_EXPORTED_TARGETS})
 add_executable(baxter_at_home src/baxter_at_home.cpp)
 target_link_libraries(baxter_at_home ${catkin_LIBRARIES})
 add_dependencies(baxter_at_home ${catkin_EXPORTED_TARGETS})
+
+add_executable(collision_avoidance src/collision_avoidance.cpp)
+target_link_libraries(collision_avoidance ${catkin_LIBRARIES})
+add_dependencies(collision_avoidance ${catkin_EXPORTED_TARGETS})
