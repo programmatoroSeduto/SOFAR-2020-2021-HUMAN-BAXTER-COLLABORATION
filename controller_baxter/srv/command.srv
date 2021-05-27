@@ -1,3 +1,6 @@
+# arm: "left", "right"
+# pos: "box", "center"
+# cube: E, M, C, G, I
 string arm
 string pos
 string cube
