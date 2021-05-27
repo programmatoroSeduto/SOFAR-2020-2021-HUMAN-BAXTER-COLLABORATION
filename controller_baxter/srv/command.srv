@@ -1,3 +1,5 @@
+# SERVICE NAME: controller_server
+
 # arm: "left", "right"
 # pos: "box", "center"
 # cube: E, M, C, G, I
