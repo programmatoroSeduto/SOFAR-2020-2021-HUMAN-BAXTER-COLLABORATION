@@ -23,20 +23,18 @@ using namespace geometry_msgs;
 #define step_near_final_pos 0.05
 #define step_optimize_grasp 0.01
 
-
-
 //GLOBAL VARIABLES
 MoveGroupInterface *right_arm;
 MoveGroupInterface *left_arm;
 MoveGroupInterface *both_arms;
 ros::Publisher trajectory_pub;
-sensor_msgs::JointState messaggio_joint,left_harm_msg_joint,right_harm_msg_joint,both_harm_msg_joint;
+sensor_msgs::JointState messaggio_joint,left_arm_msg_joint,right_arm_msg_joint,both_arm_msg_joint;
 Pose target_block,red_box_pose,blue_box_pose,A_red,B_red,C_blue,D_red,E_blue,F_red,G_blue,H_red,I_blue,L_red,M_blue,target_for_harm_switch;
 Pose C_blue_final,E_blue_final,G_blue_final,I_blue_final,M_blue_final;
 
 //SUBSCRIBER CALLBACKS
 void tf_callback(const human_baxter_collaboration::UnityTf& msg);
-void update_joints_callback(const sensor_msgs::JointState& msg );
+void update_joints_callback(const sensor_msgs::JointState& msg );//NOT USED
 
 //SERVICES
 bool server_callback(controller_baxter::command::Request &req,controller_baxter::command::Response &res);
@@ -48,11 +46,12 @@ void move_to_pose(geometry_msgs::Pose pt, bool Orientamento);
 void stampa_Pose(Pose po);
 void move_to_waypoints(vector<Pose> waypoints);
 bool move_block(string block_name,MoveGroupInterface *group);
-void update_start_state_from_callback();
+void update_start_state_at_home();
 void update_start_state_after_trajectory_execution(moveit_msgs::RobotTrajectory last_trajectory,MoveGroupInterface *group);
 Pose pose_of_block(string block_name);
 bool move_block_to_switchpoint(string block_name,MoveGroupInterface *group);
 Pose final_pose_of_block(string block_name);
+void initialize_joints();
 
 int main(int argc, char** argv)
 {
@@ -87,10 +86,11 @@ vector<double> joints_both;
 joints_right=movegroup_right.getCurrentJointValues();
 joints_left=movegroup_left.getCurrentJointValues(); 
 joints_both=movegroup_both.getCurrentJointValues();
-
+initialize_joints();
+update_start_state_at_home();
 
 while(ros::ok()){
-//ros::spinOnce();
+ros::spinOnce();
 //update_start_state_from_callback();
 }
 
@@ -230,6 +230,9 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
  
   // I publish the trajectory to be executed
   trajectory_pub.publish(my_trajectory);
+  
+  // I update the start state with the home
+  update_start_state_at_home();
   return true;
 }
 
@@ -495,13 +498,13 @@ void update_joints_callback(const sensor_msgs::JointState& msg)
  messaggio_joint.position.erase(messaggio_joint.position.begin());
  messaggio_joint.position.erase(messaggio_joint.position.begin()+7,messaggio_joint.position.begin()+18);
 
- left_harm_msg_joint=msg;
- left_harm_msg_joint.name.erase(left_harm_msg_joint.name.begin());
- left_harm_msg_joint.name.erase(left_harm_msg_joint.name.begin(),left_harm_msg_joint.name.begin()+7);
- left_harm_msg_joint.name.erase(left_harm_msg_joint.name.begin()+7,left_harm_msg_joint.name.begin()+11);
- left_harm_msg_joint.position.erase(left_harm_msg_joint.position.begin());
- left_harm_msg_joint.position.erase(left_harm_msg_joint.position.begin(),left_harm_msg_joint.position.begin()+7);
- left_harm_msg_joint.position.erase(left_harm_msg_joint.position.begin()+7,left_harm_msg_joint.position.begin()+11);
+ left_arm_msg_joint=msg;
+ left_arm_msg_joint.name.erase(left_arm_msg_joint.name.begin());
+ left_arm_msg_joint.name.erase(left_arm_msg_joint.name.begin(),left_arm_msg_joint.name.begin()+7);
+ left_arm_msg_joint.name.erase(left_arm_msg_joint.name.begin()+7,left_arm_msg_joint.name.begin()+11);
+ left_arm_msg_joint.position.erase(left_arm_msg_joint.position.begin());
+ left_arm_msg_joint.position.erase(left_arm_msg_joint.position.begin(),left_arm_msg_joint.position.begin()+7);
+ left_arm_msg_joint.position.erase(left_arm_msg_joint.position.begin()+7,left_arm_msg_joint.position.begin()+11);
  
 }
 //-------------------------------------------------------
@@ -525,28 +528,28 @@ double rad_to_grad(double rad)
 return rad*180/3.1415;
 }
 
-//NOT USED---------------------------------------------------------------
+
 /***
  * @brief : This function is called periodically and updates the start state of the robot
  * @param none
  * @retval : none
  ***/
-void update_start_state_from_callback(){
+void update_start_state_at_home(){
   
   //Updating the right arm: it retrieves the current position and sets it as the start state
   robot_state::RobotState start_state(*right_arm->getCurrentState());
   const robot_state::JointModelGroup *joint_model_group =start_state.getJointModelGroup(right_arm->getName());
-  start_state.setJointGroupPositions(joint_model_group, messaggio_joint.position);
+  start_state.setJointGroupPositions(joint_model_group, right_arm_msg_joint.position);
   right_arm->setStartState(start_state);
 
   //Updating the left arm: it retrieves the current position and sets it as the start state
   robot_state::RobotState left_start_state(*left_arm->getCurrentState());
   const robot_state::JointModelGroup *left_joint_model_group =left_start_state.getJointModelGroup(left_arm->getName());
-  left_start_state.setJointGroupPositions(left_joint_model_group, left_harm_msg_joint.position);
+  left_start_state.setJointGroupPositions(left_joint_model_group, left_arm_msg_joint.position);
   left_arm->setStartState(left_start_state);
 
 }
-//-------------------------------------------------------------------
+
 
 /***
  * @brief : This function prints the current position of an object
@@ -610,6 +613,25 @@ bool server_callback(controller_baxter::command::Request &req,controller_baxter:
   
   return true;
 }
+
+void initialize_joints(){
+left_arm_msg_joint.position.push_back(-0.52);
+left_arm_msg_joint.position.push_back(-1.22);
+left_arm_msg_joint.position.push_back(0);
+left_arm_msg_joint.position.push_back(1.72);
+left_arm_msg_joint.position.push_back(0);
+left_arm_msg_joint.position.push_back(0.75);
+left_arm_msg_joint.position.push_back(0);
+
+right_arm_msg_joint.position.push_back(0.52);
+right_arm_msg_joint.position.push_back(-1.22);
+right_arm_msg_joint.position.push_back(0);
+right_arm_msg_joint.position.push_back(1.72);
+right_arm_msg_joint.position.push_back(0);
+right_arm_msg_joint.position.push_back(0.75);
+right_arm_msg_joint.position.push_back(0);
+}
+
 /*
 // DA RIVEDERE------------------------------------------------
 void add_block(){
