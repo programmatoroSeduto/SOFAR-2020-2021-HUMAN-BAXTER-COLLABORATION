@@ -22,6 +22,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   )
 
+catkin_python_setup()
+
 add_service_files(DIRECTORY srv)
 
 generate_messages(
@@ -49,3 +51,7 @@ add_dependencies(baxter_at_home ${catkin_EXPORTED_TARGETS})
 add_executable(collision_avoidance src/collision_avoidance.cpp)
 target_link_libraries(collision_avoidance ${catkin_LIBRARIES})
 add_dependencies(collision_avoidance ${catkin_EXPORTED_TARGETS})
+
+catkin_install_python( PROGRAMS scripts/task_manager.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION} )
+
+catkin_install_python( PROGRAMS scripts/debug.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION} )
