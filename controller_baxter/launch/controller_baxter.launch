@@ -1,6 +1,0 @@
-<launch>
-<include file="$(find human_baxter_collaboration)/launch/human_baxter_collaboration.launch" />
-<node pkg="controller_baxter" name ="baxter_at_home" type="baxter_at_home" required="true"/>
-<!-- <node pkg="controller_baxter" name ="controller_baxter" type="controller_baxter" required="true" /> -->
-<!-- <node pkg="controller_baxter" name ="task_manager" type="task_manager.py" /> -->
-</launch>
