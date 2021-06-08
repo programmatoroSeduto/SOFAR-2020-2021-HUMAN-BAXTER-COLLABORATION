@@ -67,6 +67,7 @@ bool server_callback(controller_baxter::at_home::Request &req,controller_baxter:
  if(req.arm=="left")  messaggio_joint=left_arm_msg_joint;
  if(req.arm!="left"&& req.arm!="right") return false;
  
+ /*
  cout<<"joint0: "<<messaggio_joint.position[0]<<endl;
  cout<<"joint1: "<<messaggio_joint.position[1]<<endl;
  cout<<"joint2: "<<messaggio_joint.position[2]<<endl;
@@ -74,6 +75,7 @@ bool server_callback(controller_baxter::at_home::Request &req,controller_baxter:
  cout<<"joint4: "<<messaggio_joint.position[4]<<endl;
  cout<<"joint5: "<<messaggio_joint.position[5]<<endl;
  cout<<"joint6: "<<messaggio_joint.position[6]<<endl;
+ */
  
  if((very_close(messaggio_joint.position[0],0.52)||very_close(messaggio_joint.position[0],-0.52))&& 
  very_close(messaggio_joint.position[1],-1.22)&& 

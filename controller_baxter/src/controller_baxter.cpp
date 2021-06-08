@@ -29,12 +29,11 @@ MoveGroupInterface *left_arm;
 MoveGroupInterface *both_arms;
 ros::Publisher trajectory_pub;
 sensor_msgs::JointState messaggio_joint,left_arm_msg_joint,right_arm_msg_joint,both_arm_msg_joint;
-Pose target_block,red_box_pose,blue_box_pose,A_red,B_red,C_blue,D_red,E_blue,F_red,G_blue,H_red,I_blue,L_red,M_blue,target_for_harm_switch;
+Pose target_block,red_box_pose,blue_box_pose,A_red,B_red,C_blue,D_red,E_blue,F_red,G_blue,H_red,I_blue,L_red,M_blue,target_for_arm_switch;
 Pose C_blue_final,E_blue_final,G_blue_final,I_blue_final,M_blue_final;
 
 //SUBSCRIBER CALLBACKS
 void tf_callback(const human_baxter_collaboration::UnityTf& msg);
-void update_joints_callback(const sensor_msgs::JointState& msg );//NOT USED
 
 //SERVICES
 bool server_callback(controller_baxter::command::Request &req,controller_baxter::command::Response &res);
@@ -60,8 +59,6 @@ ros::init(argc, argv, "baxter_controller");
 ros::NodeHandle n;
 // Initialize the subscriber from unity tf
 ros::Subscriber tf_sub = n.subscribe("unity_tf", 10, tf_callback);
-// Initialize the subscriber for the joint states
-//ros::Subscriber joint_state_sub = n.subscribe("baxter_joint_states", 10, update_joints_callback);
 // Initialize the server for controlling the baxter
 ros::ServiceServer controller_server = n.advertiseService("controller_server",server_callback);
 // Initialize the publisher for the moveit trajectory
@@ -91,7 +88,6 @@ update_start_state_at_home();
 
 while(ros::ok()){
 ros::spinOnce();
-//update_start_state_from_callback();
 }
 
 spinner.stop();
@@ -124,7 +120,7 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
     final_target=final_pose_of_block(block_name);
   }
   else if(str_final_pos=="center"){
-    final_target=target_for_harm_switch;
+    final_target=target_for_arm_switch;
   }
   else {
     ROS_INFO("NO FINAL POSITION KNOWN");
@@ -236,98 +232,7 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
   return true;
 }
 
-/***
- * @brief : This function moves the requested block to the switchpoint 
- * @param block_name : the name of the block I want to move
- * @param group : with which arm I want move the block
- * @retval : it returns true if we were able to complete the movement or false if not
- ***/
- /*
-bool move_block_to_switchpoint(string block_name,MoveGroupInterface *group){
 
-  ROS_INFO("Trying to execute a trajectory");
-  MoveGroupInterface::Plan my_plan;
-  bool success;
-  //retrieving the coordinates for the block I want to move
-  target_block=pose_of_block(block_name);
-
-  // Identify which arm I want to use
-  string arm;
-  if(group->getName()=="right_arm"){
-    arm="right";
-  }
-
-  if(group->getName()=="left_arm"){
-    arm="left";
-  }
-
-  // setting the first position as the position right above the block
-  // the x and y coordinates are the same of the block while the z coordinate is incremented
-  Pose above_target=target_block;
-  above_target.position.z+=step_near_block;
-
-  // I set the target pose as the one calculated before and I find the trajectory
-  group->setPoseTarget(above_target);
-  success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
-  // If I don't have a feasible trajectory I return false
-  if(!success)return false;
-  
-  // I save the tracjectory in a queue
-  human_baxter_collaboration::BaxterTrajectory my_trajectory;
-  my_trajectory.arm=arm; 
-  my_trajectory.trajectory.push_back(my_plan.trajectory_);
-
-  // I update the start state with the one just reached
-  update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
-
-  Pose adjusted_target_block=target_block;
-  adjusted_target_block.position.z-=step_optimize_grasp;
-
-  // I set the target pose as the one of the block and I find the trajectory
-  group->setPoseTarget(adjusted_target_block);
-  success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
-  // If I don't have a feasible trajectory I return false
-  if(!success)return false;
-  
-  // I save the tracjectory in a queue  
-  my_trajectory.trajectory.push_back(my_plan.trajectory_);
-  
-  // I update the start state with the one just reached
-  update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
-
-  above_target=target_block;
-  above_target.position.z+=step_above_block;
-
-  // I set the target pose as position above the block and I find the trajectory 
-  group->setPoseTarget(above_target);
-  success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
-  if(!success)return false;
-  
-  // If I don't have a feasible trajectory I return false
-  my_trajectory.trajectory.push_back(my_plan.trajectory_);
-
-  // I update the start state with the one just reached
-  update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
-
-  // I set the target pose as the bosition in the center of the table
-  // in this position both arms are able to pick the block up
-  group->setPoseTarget(target_for_harm_switch);
-  success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
-  // If I don't have a feasible trajectory I return false
-  if(!success)return false;
-  
-  // I save the tracjectory in a queue  
-  my_trajectory.trajectory.push_back(my_plan.trajectory_);
-
-  // I publish the trajectoryto be executed
-  trajectory_pub.publish(my_trajectory);
-  return true;
-}
-*/
 /***
  * @brief : This function retrieves the position of a block
  * @param block_name : the block I want to know the pose of
@@ -473,8 +378,8 @@ void tf_callback(const human_baxter_collaboration::UnityTf& msg)
     // for the frame of the switching point I set its position 0.15 above the given one
     if(msg.frames[i].header.frame_id=="MiddlePlacementN"){
 
-      target_for_harm_switch=msg.frames[i].pose;
-      target_for_harm_switch.position.z;
+      target_for_arm_switch=msg.frames[i].pose;
+      target_for_arm_switch.position.y+=0.1;
 
     }
 
@@ -482,41 +387,6 @@ void tf_callback(const human_baxter_collaboration::UnityTf& msg)
 
 }
 
-
-//NOT USED----------------------------------------------
-/***
- * @brief : This function is called when you data are published on the topic baxter_joint_states
- * @param msgs : the new data retrieved
- * @retval : none
- ***/
-void update_joints_callback(const sensor_msgs::JointState& msg)
-{
-	
- messaggio_joint=msg;
- messaggio_joint.name.erase(messaggio_joint.name.begin());
- messaggio_joint.name.erase(messaggio_joint.name.begin()+7,messaggio_joint.name.begin()+18);
- messaggio_joint.position.erase(messaggio_joint.position.begin());
- messaggio_joint.position.erase(messaggio_joint.position.begin()+7,messaggio_joint.position.begin()+18);
-
- left_arm_msg_joint=msg;
- left_arm_msg_joint.name.erase(left_arm_msg_joint.name.begin());
- left_arm_msg_joint.name.erase(left_arm_msg_joint.name.begin(),left_arm_msg_joint.name.begin()+7);
- left_arm_msg_joint.name.erase(left_arm_msg_joint.name.begin()+7,left_arm_msg_joint.name.begin()+11);
- left_arm_msg_joint.position.erase(left_arm_msg_joint.position.begin());
- left_arm_msg_joint.position.erase(left_arm_msg_joint.position.begin(),left_arm_msg_joint.position.begin()+7);
- left_arm_msg_joint.position.erase(left_arm_msg_joint.position.begin()+7,left_arm_msg_joint.position.begin()+11);
- 
-}
-//-------------------------------------------------------
-/*void print_all_joints()
-{
-vector<double> joint_group_positions;
-joint_group_positions=right_arm->getCurrentJointValues();
-cout<<endl<<"Giunti:"<<endl;
-for(int i=0;i<joint_group_positions.size();i++){
-cout<<i<<":"<<joint_group_positions[i]<<" xxx "<<rad_to_grad(joint_group_positions[i])<<endl;
-}
-}*/
 
 /***
  * @brief : This function is called to convert from radians to degrees
@@ -537,10 +407,10 @@ return rad*180/3.1415;
 void update_start_state_at_home(){
   
   //Updating the right arm: it retrieves the current position and sets it as the start state
-  robot_state::RobotState start_state(*right_arm->getCurrentState());
-  const robot_state::JointModelGroup *joint_model_group =start_state.getJointModelGroup(right_arm->getName());
-  start_state.setJointGroupPositions(joint_model_group, right_arm_msg_joint.position);
-  right_arm->setStartState(start_state);
+  robot_state::RobotState right_start_state(*right_arm->getCurrentState());
+  const robot_state::JointModelGroup *joint_model_group =right_start_state.getJointModelGroup(right_arm->getName());
+  right_start_state.setJointGroupPositions(joint_model_group, right_arm_msg_joint.position);
+  right_arm->setStartState(right_start_state);
 
   //Updating the left arm: it retrieves the current position and sets it as the start state
   robot_state::RobotState left_start_state(*left_arm->getCurrentState());
@@ -598,18 +468,13 @@ void update_start_state_after_trajectory_execution(moveit_msgs::RobotTrajectory 
 bool server_callback(controller_baxter::command::Request &req,controller_baxter::command::Response &res){
   
   res.ok=false;	
-  //static ros::AsyncSpinner spinner_service(2);
-  //spinner_service.start();
+
   // It checks which arm is requested to move
   MoveGroupInterface *arm_to_move;
   if(req.arm=="left") arm_to_move=left_arm;
   if(req.arm=="right") arm_to_move=right_arm;
-  // checks where the requested position is
-  // if it is box the request block is put in the blue box
-
   res.ok=move_block(req.cube,arm_to_move,req.pos);
-
-  //spinner_service.stop();	 
+ 
   
   return true;
 }
