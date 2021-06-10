@@ -28,6 +28,12 @@ rosrun controller_baxter controller_baxter > /dev/null &
 rosrun controller_baxter task_manager.py
 ```
 
+Per avviare la versione alternativa invece, usa questo:
+
+```bash
+rosrun controller_baxter task_manager_2.py
+```
+
 # Ipotesi di funzionamento
 
 ## Movimenti dell'operatore
@@ -76,7 +82,29 @@ bool at_home
 Parametri di funzionamento: in sim_infos.py . Ovviamente, il buonn funzionamento del programma dipende dalla scelta opportuna di questi valori. Questo file serve anche per raccogliere in un punto buona parte dell'hard coding necessario per questo progetto. 
 
 ```python
-## --------------------------- DIMENSIONI OGGETTI DELLA SIMULAZIONE
+#!/usr/bin/env python
+
+## --------------------------- ALTRI PARAMETRI
+
+# frequenza del task manager
+task_manager_freq = 2
+
+# frequenza del log da Unity
+#    ogni quanti messaggi ritornare un'informazione sul topic unity_tf
+log_freq = 250
+
+# frequenza del log completo da Unity
+#    ogni quanti messaggi ritornare un'informazione sul topic unity_tf
+log_freq_extended = 1000000
+
+# distanza minima che i due blocchi devono avere per l'esecuzione parallela
+minimum_distance_parallel = 0.5
+
+# scostamento della posizione del blocco dal centro
+#    SOLO VERSIONE ALTERNATIVA
+center_dispacement = 0.5
+
+## --------------------------- DIMENSIONI OGGETTI
 
 # lato del cubetto (tutti i lati uguali)
 sz_cube = 0.05
@@ -88,10 +116,9 @@ sz_goal = [ 0.14, 0.01, 0.221 ]
 sz_table = [ 2, 0.8, 1 ]
 
 # dimensioni della mano (soglia di allarme)
-#    raggio di una circonferenza
 sz_hand = 0.3
 
-## --------------------------- NOMI DI TOPIC E SERVIZI
+## --------------------------- NOMI
 
 # mani
 name_human_hand_right = "hand_r"
@@ -109,24 +136,6 @@ server_baxter_at_home = "baxter_at_home_server"
 
 # canale da Unity
 topic_unity_tf = "unity_tf"
-
-## --------------------------- ALTRI PARAMETRI
-
-# frequenza del task manager
-#    quante volte viene rieseguito il calcolo dei task in stato di attesa
-task_manager_freq = 2
-
-# frequenza del log da Unity
-#    ogni quanti messaggi stampare un'informazione sul topic unity_tf
-log_freq = 250
-
-# frequenza del log completo da Unity
-#    ogni quanti cicli stampare a video lo stato integrale
-log_freq_extended = 1000000
-
-# distanza minima che i due blocchi devono avere per l'esecuzione parallela
-#    0.5 probabilmente è un po' esagerato come valore... 0.2 è tropo piccolo però
-minimum_distance_parallel = 0.5
 ```
 
 ## Funzionamento generale
