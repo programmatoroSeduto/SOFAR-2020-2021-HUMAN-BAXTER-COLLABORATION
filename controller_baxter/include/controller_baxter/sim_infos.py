@@ -16,6 +16,9 @@ log_freq_extended = 1000000
 # distanza minima che i due blocchi devono avere per l'esecuzione parallela
 minimum_distance_parallel = 0.5
 
+# scostamento della posizione del blocco dal centro
+center_dispacement = 0.5
+
 
 
 ## --------------------------- DIMENSIONI OGGETTI
