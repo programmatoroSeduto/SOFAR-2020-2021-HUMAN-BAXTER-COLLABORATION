@@ -48,9 +48,9 @@ add_executable(baxter_at_home src/baxter_at_home.cpp)
 target_link_libraries(baxter_at_home ${catkin_LIBRARIES})
 add_dependencies(baxter_at_home ${catkin_EXPORTED_TARGETS})
 
-add_executable(collision_avoidance src/collision_avoidance.cpp)
-target_link_libraries(collision_avoidance ${catkin_LIBRARIES})
-add_dependencies(collision_avoidance ${catkin_EXPORTED_TARGETS})
+add_executable(go_to_home src/go_to_home.cpp)
+target_link_libraries(go_to_home ${catkin_LIBRARIES})
+add_dependencies(go_to_home ${catkin_EXPORTED_TARGETS})
 
 catkin_install_python( PROGRAMS scripts/task_manager.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION} )
 
