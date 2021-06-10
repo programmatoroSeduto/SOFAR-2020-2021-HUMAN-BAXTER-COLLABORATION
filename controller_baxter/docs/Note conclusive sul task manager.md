@@ -1,4 +1,4 @@
-# Note sul task manager
+# Note conclusive sul task manager
 
 # Eseguire il task manager e il progetto
 
@@ -227,7 +227,7 @@ In questo esempio, che usa la configurazione standard fornita dai prof,
 
 Consolle del task manager: 
 
-```markdown
+```python
 [INFO] [1623145198.326408]:  [task manager] subscribe: unity_tf ...
 [INFO] [1623145198.328779]:  [task manager] subscribe: unity_tf ... OK!
 [INFO] [1623145198.330122]:  [task manager] service: controller_server ...
@@ -351,3 +351,18 @@ Consolle del task manager:
 [INFO] [1623145429.494226]:  [task manager] Job done. (misses: 1)
 [INFO] [1623145429.495401]:  [task manager] offline.
 ```
+
+# Versione alternativa
+
+Per avviare la versione alternativa, scrivi questo comando sulla consolle:
+
+```bash
+rosrun controller_baxter task_manager_2.py
+```
+
+Cambiamenti rispetto alla versione precedente:
+
+- Baxter può mettere un solo blocchetto alla volta nella zona centrale del tavolo. Questo per evitare sovrapposizioni tra i blocchi e miss dovute ad uno scontro accidentale col blocco
+- il braccio destro non può depositare altri blocchi nella zona centrale se essa è ancora occupata
+
+Questo ha richiesto una modifica su ampia scala del codice, ma nulla di diverso dal punto di vista architetturale.
