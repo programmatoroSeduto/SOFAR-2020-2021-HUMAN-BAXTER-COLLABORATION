@@ -1,11 +1,10 @@
-# Note conclusive sul task manager
+# Task manager
 
 # Eseguire il task manager e il progetto
 
 Avviare ROS e il launch file 
 
-```
-roscore &
+```bash
 roslaunch human_baxter_collaboration human_baxter_collaboration.launch &
 ```
 
@@ -26,12 +25,6 @@ rosrun controller_baxter baxter_at_home > /dev/null &
 rosrun controller_baxter controller_baxter > /dev/null & 
 
 rosrun controller_baxter task_manager.py
-```
-
-Per avviare la versione alternativa invece, usa questo:
-
-```bash
-rosrun controller_baxter task_manager_2.py
 ```
 
 # Ipotesi di funzionamento
@@ -81,6 +74,8 @@ bool at_home
 
 Parametri di funzionamento: in sim_infos.py . Ovviamente, il buonn funzionamento del programma dipende dalla scelta opportuna di questi valori. Questo file serve anche per raccogliere in un punto buona parte dell'hard coding necessario per questo progetto. 
 
+IL task manager attualmente consente di scegliere se leggere le informazioni sull'environment da unity o da tf. 
+
 ```python
 #!/usr/bin/env python
 
@@ -91,18 +86,27 @@ task_manager_freq = 2
 
 # frequenza del log da Unity
 #    ogni quanti messaggi ritornare un'informazione sul topic unity_tf
+#    NOTA: usando tf normale, serve anche la 'use_verbose' altrimenti non verrà stampato nulla
 log_freq = 250
 
 # frequenza del log completo da Unity
 #    ogni quanti messaggi ritornare un'informazione sul topic unity_tf
+#    NOTA: usando tf normale, serve anche la 'use_verbose' altrimenti non verrà stampato nulla
 log_freq_extended = 1000000
 
 # distanza minima che i due blocchi devono avere per l'esecuzione parallela
 minimum_distance_parallel = 0.5
 
 # scostamento della posizione del blocco dal centro
-#    SOLO VERSIONE ALTERNATIVA
 center_dispacement = 0.5
+
+# usare il topic da Unity? O direttamente quello da tf?
+use_unity = False
+
+# modalità "verbose": stampa log dettagliato su consolle
+use_verbose = False
+
+
 
 ## --------------------------- DIMENSIONI OGGETTI
 
@@ -117,6 +121,8 @@ sz_table = [ 2, 0.8, 1 ]
 
 # dimensioni della mano (soglia di allarme)
 sz_hand = 0.3
+
+
 
 ## --------------------------- NOMI
 
@@ -136,6 +142,8 @@ server_baxter_at_home = "baxter_at_home_server"
 
 # canale da Unity
 topic_unity_tf = "unity_tf"
+topic_tf = "tf"
+
 ```
 
 ## Funzionamento generale
@@ -234,7 +242,7 @@ In questo esempio, che usa la configurazione standard fornita dai prof,
 - mentre lo sta rimuovendo, l'umano inizia a muoversi
 - collaborazione.
 
-Consolle del task manager: 
+Consolle del task manager: (vecchio)
 
 ```python
 [INFO] [1623145198.326408]:  [task manager] subscribe: unity_tf ...
@@ -361,17 +369,19 @@ Consolle del task manager:
 [INFO] [1623145429.495401]:  [task manager] offline.
 ```
 
-# Versione alternativa
+# Versione alternativa PROMOSSA A UFFICIALE
 
 Per avviare la versione alternativa, scrivi questo comando sulla consolle:
 
 ```bash
-rosrun controller_baxter task_manager_2.py
+# rosrun controller_baxter task_manager_2.py
+rosrun controller_baxter task_manager.py
 ```
 
 Cambiamenti rispetto alla versione precedente:
 
 - Baxter può mettere un solo blocchetto alla volta nella zona centrale del tavolo. Questo per evitare sovrapposizioni tra i blocchi e miss dovute ad uno scontro accidentale col blocco
 - il braccio destro non può depositare altri blocchi nella zona centrale se essa è ancora occupata
+- lettura da topic Unity e Tf
 
 Questo ha richiesto una modifica su ampia scala del codice, ma nulla di diverso dal punto di vista architetturale.

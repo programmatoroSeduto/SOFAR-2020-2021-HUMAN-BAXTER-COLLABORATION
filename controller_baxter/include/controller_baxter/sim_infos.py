@@ -7,10 +7,12 @@ task_manager_freq = 2
 
 # frequenza del log da Unity
 #    ogni quanti messaggi ritornare un'informazione sul topic unity_tf
+#    NOTA: usando tf normale, serve anche la 'use_verbose' altrimenti non verrà stampato nulla
 log_freq = 250
 
 # frequenza del log completo da Unity
 #    ogni quanti messaggi ritornare un'informazione sul topic unity_tf
+#    NOTA: usando tf normale, serve anche la 'use_verbose' altrimenti non verrà stampato nulla
 log_freq_extended = 1000000
 
 # distanza minima che i due blocchi devono avere per l'esecuzione parallela
@@ -18,6 +20,12 @@ minimum_distance_parallel = 0.5
 
 # scostamento della posizione del blocco dal centro
 center_dispacement = 0.5
+
+# usare il topic da Unity? O direttamente quello da tf?
+use_unity = False
+
+# modalità "verbose": stampa log dettagliato su consolle
+use_verbose = False
 
 
 
@@ -55,3 +63,4 @@ server_baxter_at_home = "baxter_at_home_server"
 
 # canale da Unity
 topic_unity_tf = "unity_tf"
+topic_tf = "tf"
