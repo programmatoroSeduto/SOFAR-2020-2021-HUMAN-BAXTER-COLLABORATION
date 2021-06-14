@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="controller_baxter" type="controller_baxter" name="controller_baxter" output="screen"  />
+    <node pkg="controller_baxter" type="baxter_at_home" name="baxter_at_home"/>
+    <!--<node pkg="controller_baxter" type="task_manager.py" name="task_manager" output="screen"  />-->
+</launch>
