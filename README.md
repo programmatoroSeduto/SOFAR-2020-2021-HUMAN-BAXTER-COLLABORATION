@@ -11,14 +11,13 @@
 
 ## How to set up the project
 
-Installing the package is not a big deal:
+In order to install the package::
 
 1. create a workspace where to put the package. 
 2. Make sure you have the reuired components in order to make the project run! Copy all the packages in `dependencies` folder alongside with `controller_baxter`
 3. Put the folder *controller_baxter* into the *src* folder of your workspace
 4. then, build the workspace by `catkin_make`.
 
-Here we go! That's all. 
 
 ## How to run the project
 
@@ -30,9 +29,9 @@ First of all, in your ROS environment, launch the server:
 roslaunch human_baxter_collaboration human_baxter_collaboration.launch &
 ```
 
-On windows, launch the package `MMILauncher.exe`: it will let the human to move in the simulation.
+On windows, launch the package `MMILauncher.exe`: it will let the human move in the simulation.
 
-If the connection works fine, this print (or something similar) should appear on your shell:
+If the connection works fine, a print similar to this one should appear on your shell:
 
 ```bash
 ROS-Unity Handshake received, will connect to 192.168.65.2:5005
@@ -40,7 +39,7 @@ ROS-Unity Handshake received, will connect to 192.168.65.2:5005
 
 Launch the Unity environment, then "play"→ start simulation.
 
-Here you can launch all the components of our project. Make sure the simulation is runing before launching these components!
+Here you can launch all the components of our project. Make sure the simulation is running before launching these components.
 
 First of all, launch `baxter_at_home` node:
 
@@ -48,21 +47,21 @@ First of all, launch `baxter_at_home` node:
 rosrun controller_baxter baxter_at_home > /dev/null &
 ```
 
-Then, launch the node `controller_baxter` which allows the robot moving:
+Then, launch the node `controller_baxter` which allows the robot to move:
 
 ```bash
 rosrun controller_baxter controller_baxter > /dev/null & 
 ```
 
-Last step: launch the task manager. After this, the robot immediately starts moving.
+Last step: launch the task manager. After this, the robot will immediately start moving.
 
 ```bash
 rosrun controller_baxter task_manager.py
 ```
 
-## Time to Practise!
+## Time to Practice!
 
-Don't you want to set up the project? Don't worry! Here are two small video experiments of our project. Have fun!
+In case it is not possible to set up the project here we provided two small video experiments for our project.
 
 - Test 1, using `unity_tf` topic
 

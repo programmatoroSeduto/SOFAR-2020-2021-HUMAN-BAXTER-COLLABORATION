@@ -95,9 +95,9 @@ return 0;
 }
 
 /***
- * @brief : This function moves the requested block inside the blue box
+ * @brief : This function moves a block to a given target
  * @param block_name : the name of the block I want to move
- * @param group : with which arm I want to move
+ * @param str_final_pos : where I want to put the block
  * @retval : it returns true if we were able to complete the movement or false if not
  ***/
 bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos)
@@ -116,6 +116,7 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
     arm="left";
   }
 
+  // Identify where I want to put the block
   if(str_final_pos=="box"){
     final_target=final_pose_of_block(block_name);
   }
@@ -132,7 +133,6 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
   MoveGroupInterface::Plan my_plan;
   bool success;
 
-  //-------mi metto sopra al blocco 
   // setting the first position as the position right above the block
   // the x and y coordinates are the same of the block while the z coordinate is incremented
   above_target=target_block;
@@ -150,10 +150,10 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
   my_trajectory.arm=arm;
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   
-  //---------prendo il blocco
   // I update the start state with the one just reached
   update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
 
+  // setting the next step to the position of the block
   Pose adjusted_target_block=target_block;
   adjusted_target_block.position.z-=step_optimize_grasp;
 
@@ -167,15 +167,14 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
   // I save the tracjectory in a queue
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   
-  //---------vado un poco sopra al blocco
-  
   // I update the start state with the one just reached
   update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
 
+  // set the next step as the position above the block
   Pose target_above_block=target_block;
   target_above_block.position.z+=step_above_block;
 
-  // I set the target pose as the one of the block and I find the trajectory
+  // I set the target pose and I find the trajectory
   group->setPoseTarget(target_above_block);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
@@ -185,16 +184,14 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
   // I save the tracjectory in a queue
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
 
-
-  //--------mi metto sopra al mio final target--------
-
   // I update the start state with the one just reached
   update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
 
+  // set the next step as above the final target
   Pose before_final_target=final_target;
   before_final_target.position.z+=step_above_final_pos;
 
-  // I set the target pose as position of the final box and I find the trajectory
+  // I set the target pose and find the trajectory
   group->setPoseTarget(before_final_target);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
@@ -204,16 +201,14 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
   // I save the tracjectory in a queue
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
 
-
-  //--------vado al final target--------
-
   // I update the start state with the one just reached
   update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
 
+  // I set the next step as near the final target
   above_target=final_target;
   above_target.position.z+=step_near_final_pos;
 
-  // I set the target pose as position above the block and I find the trajectory 
+  // I set the target pose and I find the trajectory 
   group->setPoseTarget(above_target);
   success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
@@ -223,7 +218,6 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
   // I save the tracjectory in a queue
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   
- 
   // I publish the trajectory to be executed
   trajectory_pub.publish(my_trajectory);
   
@@ -231,7 +225,6 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
   update_start_state_at_home();
   return true;
 }
-
 
 /***
  * @brief : This function retrieves the position of a block
@@ -271,8 +264,14 @@ Pose pose_of_block(string block_name){
     return M_blue;
   }
 }
+
+/***
+ * @brief : This function retrieves the final position of a block
+ * @param block_name : the block I want to know the pose of
+ * @retval : the Pose 
+ ***/
 Pose final_pose_of_block(string block_name){
-  // I check which box I want the pose of
+  // I check which box I want the final pose of
   if(block_name=="E"){
 
     return E_blue_final;
@@ -375,7 +374,7 @@ void tf_callback(const human_baxter_collaboration::UnityTf& msg)
       M_blue_final.position.x-=0.07;
 
     }
-    // for the frame of the switching point I set its position 0.15 above the given one
+    // for the frame of the center point I set its position 0.15 above the given one
     if(msg.frames[i].header.frame_id=="MiddlePlacementN"){
 
       target_for_arm_switch=msg.frames[i].pose;
@@ -473,12 +472,18 @@ bool server_callback(controller_baxter::command::Request &req,controller_baxter:
   MoveGroupInterface *arm_to_move;
   if(req.arm=="left") arm_to_move=left_arm;
   if(req.arm=="right") arm_to_move=right_arm;
+  // It calls the function to move a block to a desired position
   res.ok=move_block(req.cube,arm_to_move,req.pos);
  
   
   return true;
 }
 
+/***
+ * @brief : This function initializes the joint positions
+ * @param None
+ * @retval : None
+ ***/
 void initialize_joints(){
 left_arm_msg_joint.position.push_back(-0.52);
 left_arm_msg_joint.position.push_back(-1.22);

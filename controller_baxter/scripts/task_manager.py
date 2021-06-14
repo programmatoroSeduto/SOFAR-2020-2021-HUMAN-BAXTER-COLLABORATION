@@ -1,5 +1,28 @@
 #! /usr/bin/env python
 
+## @package controller_baxter
+#
+#  \file gtask_manager.py
+#  \brief This file allows the baxter to decide what to do
+#
+#  \authors Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi
+#  \version 1.0
+#  \date 12/06/2021
+#  \details
+#      # subscribe: unity_tf o tf depending on settings
+#
+#  Subscribes to: <BR>
+#	 /unity_tf
+#    /tf
+#
+#  Services: <BR>
+#    controller_server
+#    baxter_at_home_server
+#
+#  Description: <BR>
+#    This node implements the choice of the actions that the two arms need to complete.
+#    In order to do so we  decided to force the right arm to only pick   
+
 import rospy
 from controller_baxter.srv import at_home, at_homeRequest, at_homeResponse
 from controller_baxter.srv import command, commandRequest, commandResponse
@@ -14,57 +37,56 @@ import controller_baxter.sim_infos as info
 
 
 
-## --------------------------- GLOBALI 
+## --------------------------- GLOBAL VARIABLES
 
-# posizione dellr mani dell'operatore
+# position of the hand of the operator
 frame_human_hand_right = Pose()
 frame_human_hand_left = Pose()
 
 
-# posizione di tutti i blocchi rossi
+# position of all red blocks
 frame_block_red = { "A" : Pose(), "L" : Pose(), "B" : Pose(), "H" : Pose(), "D" : Pose(), "F" : Pose() }
 
 
-# posizione di tutti i blocchi blu
+# position of all blue blocks
 frame_block_blue = { "E" : Pose(), "C" : Pose(), "I" : Pose(), "G" : Pose(), "M" : Pose() }
 
 
-# frame del goal blu
+# frame of the blue goal
 frame_goal_blue = Pose()
 
 
-# frame del goal rosso
+# frame of the red goal
 frame_goal_red = Pose()
 
 
-# posizione del tavolo
+# position of the table
 frame_table = Pose()
 frame_table.position.x = 0.5
 frame_table.position.y = 0
 frame_table.position.z = 0
 
 
-# quante volte il movimento è fallito
+# how many times the movement failed
 miss = 0
 
 
-# centro occupato?
-#    string / None
+# is the center free?
 block_at_center = None
 
 
 
-## --------------------------- TOPIC E SERVER
+## --------------------------- TOPIC AND SERVER
 
-# contatore degli aggiornamenti
+# counter of updates
 update_counter = 0
 
 
-# servizio "controller_server"
+# service controller_server"
 srv_controller = None
 
 
-# servizio "baxter_at_home_server"
+# service "baxter_at_home_server"
 srv_baxter_home = None
 
 
@@ -72,12 +94,12 @@ srv_baxter_home = None
 msg_unity_tf = None
 
 
-# log di fine aggiornamento
+# end of update log
 def update_log( ):
 	global update_counter
 	global frame_human_hand, frame_block_red, frame_block_blue, frame_table, frame_goal_blue, frame_goal_red
 	
-	# check e contatore aggiornamenti
+	# check and counter of updates
 	update_counter = update_counter + 1
 	
 	if( update_counter % info.log_freq == 0 ):
@@ -90,12 +112,12 @@ def update_log( ):
 		rospy.loginfo( " [task manager] frame_block_blue:\n========\n %s\n========\n", str( frame_block_blue ) )
 
 
-# aggiorna la posizione dei blocchi rossi
+# updating the position of red blocks
 def update_red_blocks( ):
 	global update_counter
 	global frame_human_hand, frame_block_red, frame_block_blue, frame_table, frame_goal_blue, frame_goal_red
 	
-	# elimina i blocchi rossi già nel goal
+	# deleting red blocks already in the goal
 	labels = list(frame_block_red.keys())
 	for elem in labels:
 		if block_in_red_goal( elem ):
@@ -105,7 +127,7 @@ def update_red_blocks( ):
 				rospy.loginfo( " [task manager] human job done." )
 
 
-# cast oggetto TransformStamped in Pose
+# trasforming from TransformStamped to Pose
 def tranformStamped_to_pose( data ):
 	to_return = Pose()
 	to_return.orientation = data.transforms[0].transform.rotation
@@ -121,12 +143,12 @@ def callback_unity( data ):
 	global update_counter
 	global frame_human_hand, frame_block_red, frame_block_blue, frame_table, frame_goal_blue, frame_goal_red
 	
-	# etichette dei blocchi
+	# label blocks
 	labels_red = frame_block_red.keys()
 	labels_blue = frame_block_blue.keys()
 	
 	for i in range( len(data.frames) ):
-		# etichetta del frame da Unity
+		# label frame unity
 		name = data.frames[i].header.frame_id
 		
 		
@@ -149,10 +171,10 @@ def callback_unity( data ):
 			frame_goal_red = data.frames[i].pose
 			
 		else:
-			# ignora il messaggio
+			# do nothing
 			pass
 	
-	# elimina i blocchi rossi già nel goal
+	# delete the red blocks already in the goal
 	update_red_blocks( )
 	
 	# log di fine aggiornamento
@@ -164,7 +186,7 @@ def callback_tf( data ):
 	global update_counter
 	global frame_human_hand, frame_block_red, frame_block_blue, frame_table, frame_goal_blue, frame_goal_red
 	
-	# etichette dei blocchi
+	# block labels
 	labels_red = frame_block_red.keys()
 	labels_blue = frame_block_blue.keys()
 	
@@ -194,10 +216,10 @@ def callback_tf( data ):
 		frame_goal_red = tranformStamped_to_pose( data )
 		
 	else:
-		# ignora il messaggio
+		# do nothing
 		pass
 	
-	# log di fine aggiornamento
+	# end of update log
 	if info.use_verbose:
 		update_log( )
 	else:
@@ -205,9 +227,9 @@ def callback_tf( data ):
 
 
 
-## --------------------------- FUNZIONI
+## --------------------------- FUNCTIONS
 
-# distanza tra due pose qualunque
+# distance between two poses
 def distance_between( pose_A, pose_B ):
 	A = [ pose_A.position.y, pose_A.position.x ]
 	B = [ pose_B.position.y, pose_B.position.x ]
@@ -218,17 +240,12 @@ def distance_between( pose_A, pose_B ):
 	return math.sqrt( (B[0]-A[0])**2 + (B[1]-A[1])**2 )
 
 
-# il blocco rosso si trova nel goal?
+# checks whether the red block is in the goal
 # elem : String
 def block_in_red_goal( elem ):
 	global frame_block_red, frame_goal_red
 	
-	# il blocco esiste
-	# SOLO SE questa funzione viene richiamata da
-	#    task_manager_body
-	# altrimenti potrebbe sollevare eccezione
-	
-	# posizione del blocco e del goal
+	# position of the block and the goal
 	P = [ frame_block_red[elem].position.y, frame_block_red[elem].position.x ]
 	O = [ frame_goal_red.position.y, frame_goal_red.position.x ]
 	
@@ -236,7 +253,7 @@ def block_in_red_goal( elem ):
 		#rospy.loginfo( " [task manager] (%s) %s[%f, %f] 0[%f, %f] x in [%f, %f] y in [%f, %f]", "block_in_red_goal", elem, P[0], P[1], O[0], O[1], O[0] - info.sz_goal[0]/2, O[0] + info.sz_goal[0]/2, O[1] - info.sz_goal[2]/2, O[1] + info.sz_goal[2]/2 )
 		pass
 	
-	# ritora true se il blocco si trova all'interno della scatola
+	# returns true only if the block is already inside its goal
 	if( P[0] < (O[0] - info.sz_goal[0]/2 ) or P[0] > (O[0] + info.sz_goal[0]/2 ) ):
 		return False
 	if( P[1] < (O[1] - info.sz_goal[2]/2 ) or P[1] > (O[1] + info.sz_goal[2]/2 ) ):
@@ -245,23 +262,19 @@ def block_in_red_goal( elem ):
 	return True
 
 
-# il blocco blu si trova nel goal?
+# check whether a blue block is inside the goal
 # elem : String
 def block_in_blue_goal( elem ):
 	global frame_block_blue, frame_goal_blue
-	
-	# supponiamo che il blocco esista nella lista
-	# SOLO SE questa funzione viene utilizzata da task_execute()
-	# e non richiamata da altre parti del codice
-	
-	# posizione del blocco e del goal
+
+	# position of the block and the goal
 	P = [ frame_block_blue[elem].position.y, frame_block_blue[elem].position.x ]
 	O = [ frame_goal_blue.position.y, frame_goal_blue.position.x ]
 	
 	if info.use_verbose:
 		rospy.loginfo( " [task manager] (%s) %s[%f, %f] 0[%f, %f] x in [%f, %f] y in [%f, %f]", "block_in_blue_goal", elem, P[0], P[1], O[0], O[1], O[0] - info.sz_goal[0]/2, O[0] + info.sz_goal[0]/2, O[1] - info.sz_goal[2]/2, O[1] + info.sz_goal[2]/2 )
 	
-	# ritora true se il blocco si trova all'interno della scatola
+	# returns true only if the block is already inside its goal
 	if( P[0] < (O[0] - info.sz_goal[0]/2 ) or P[0] > (O[0] + info.sz_goal[0]/2 ) ):
 		return False
 	if( P[1] < (O[1] - info.sz_goal[2]/2 ) or P[1] > (O[1] + info.sz_goal[2]/2 ) ):
@@ -270,17 +283,19 @@ def block_in_blue_goal( elem ):
 	return True
 
 
-# Il blocco si trova sul lato destro del tavolo?
+# checks if the robot is on the right side of the table
 #  elem : ( 'name', Pose )
 def block_on_right_table( elem ):
 	global frame_table
 	
+	# position of the block and the table
 	P = [ elem[1].position.y, elem[1].position.x ]
 	O = [ frame_table.position.y, frame_table.position.x ]
 	
 	if info.use_verbose:
 		rospy.loginfo( " [task manager] (%s) %s[%f, %f] TABLE[%f, %f] | x NOT in [%f, %f] ? | y NOT in [%f, %f] ? | test: (%s, %s)", "block_on_right_table", elem[0], P[0], P[1], O[0], O[1], O[0], O[0] + info.sz_table[0]/2, O[1] - info.sz_table[2]/2, O[1] + info.sz_table[2]/2, str( P[0] > O[0] or P[0] < (O[0] - info.sz_table[0]/2) ), str( P[1] < (O[1] - info.sz_table[2]/2) or P[1] > (O[1] + info.sz_table[2]/2) ) )
 	
+	# returns true only if the block is on the right side of the table
 	if( P[0] > O[0] or P[0] < (O[0] - info.sz_table[0]/2) ):
 		return False
 	if( P[1] < (O[1] - info.sz_table[2]/2) or P[1] >  (O[1] + info.sz_table[2]/2) ):
@@ -289,17 +304,19 @@ def block_on_right_table( elem ):
 	return True
 
 
-# Il blocco si trova sul lato destro del tavolo?
+# checks if the robot is on the left side of the table
 #  elem : ( 'name', Pose )
 def block_on_left_table( elem ):
 	global frame_table
 	
+	# position of the block and the table
 	P = [ elem[1].position.y, elem[1].position.x ]
 	O = [ frame_table.position.y, frame_table.position.x ]
 	
 	if info.use_verbose:
 		rospy.loginfo( " [task manager] (%s) %s[%f, %f] TABLE[%f, %f] | x NOT in [%f, %f] ? | y NOT in [%f, %f] ? | test: (%s %s)", "block_on_left_table", elem[0], P[0], P[1], O[0], O[1], (O[0] - info.sz_table[0]/2), O[0], O[1] - info.sz_table[2]/2, O[1] + info.sz_table[2]/2, str( P[0] < O[0] or P[0] > (O[0] + info.sz_table[0]/2) ), str( P[1] < (O[1] - info.sz_table[2]/2) or P[1] >  (O[1] + info.sz_table[2]/2) ) )
 	
+	# returns true only if the block is on the left side of the table
 	if( P[0] < O[0] or P[0] > (O[0] + info.sz_table[0]/2) ):
 		return False
 	if( P[1] < (O[1] - info.sz_table[2]/2) or P[1] >  (O[1] + info.sz_table[2]/2) ):
@@ -308,7 +325,7 @@ def block_on_left_table( elem ):
 	return True
 
 
-# ottieni la mano più vicina alla pose considerata
+# get the closest position of the hand
 # elem: Pose
 def get_nearest_hand_pose( elem ):
 	global frame_human_hand_right, frame_human_hand_left
@@ -319,13 +336,13 @@ def get_nearest_hand_pose( elem ):
 		return frame_human_hand_left
 
 
-# segnala se il blocco e' troppo vicino all'operatore
+# signal if the block is too close to the operator
 #  elem : ( 'name', Pose )
 def block_not_near_to_hand( elem ):
-	# cerca la mano più vicina al blocco considerato
+	# look for the closest hand to the block
 	frame_human_hand = get_nearest_hand_pose( elem[1] )
 	
-	#  calcola la distanza tra l'origine della mano e quella del blocco
+	# calculate the distance between the hand and the block frame
 	P = [ elem[1].position.y, elem[1].position.x ]
 	O = [ frame_human_hand.position.y, frame_human_hand.position.x ]
 	dist = math.sqrt( (P[0]-O[0])**2 + (P[1]-O[1])**2 )
@@ -336,7 +353,7 @@ def block_not_near_to_hand( elem ):
 	return True if ( dist >= info.sz_hand ) else False
 
 
-# il blocco e' accessibile?
+# checks if the block is accessible
 #  elem : ( 'name', Pose )
 def block_is_accessible( elem_b ):
 	global frame_block_red
@@ -348,20 +365,20 @@ def block_is_accessible( elem_b ):
 		
 		if info.use_verbose:
 			rospy.loginfo( " [task manager] (%s) dx=%f | dy=%f | dz=%f | sovrapposizione: %s", "block_is_accessible", dx, dy, dz, str(dx < info.sz_cube and dz < info.sz_cube and dy < 0) )
-		
+		# returns true only if the block is not superimposed to another one
 		if (dx < info.sz_cube and dz < info.sz_cube and dy < 0):
 			return False
 
 	return True
 
 
-# distanza tra un blocco e la mano dell'operatore
+# calculate the distance between the hand and a block
 #  elem : ( 'name', Pose )
 def dist_block_hand( elem ):
-	# cerca la mano più vicina al blocco considerato
+	# look for the closest hand to the block
 	frame_human_hand = get_nearest_hand_pose( elem[1] )
 	
-	#  calcola la distanza tra l'origine della mano e quella del blocco
+	#  calculate the distance bewìtween the two frame origin
 	P = [ elem[1].position.y, elem[1].position.x ]
 	O = [ frame_human_hand.position.y, frame_human_hand.position.x ]
 	
@@ -371,7 +388,7 @@ def dist_block_hand( elem ):
 	return math.sqrt( (P[0]-O[0])**2 + (P[1]-O[1])**2 )
 
 
-# Posizionamento del blocco al centro
+# check if the block is in the center of the table
 #  elem : Pose
 def check_block_is_at_center( elem ):
 	O = Pose()
@@ -379,15 +396,17 @@ def check_block_is_at_center( elem ):
 	O.position.y = 0
 	O.position.z = 0
 	
+	# calculate the distance between the block and the center
 	dist = distance_between( elem, O )
 	
 	if info.use_verbose:
 		rospy.loginfo( " [task manager] (%s) [%f, %f, %f] | distance: %f | limit: %f | answer: %s", "check_block_is_at_center", O.position.x, O.position.y, O.position.z, dist, info.center_dispacement, str( dist < info.center_dispacement ) )
 	
+	#returns true if the distance is less than a threshold
 	return ( dist < info.center_dispacement )
 
 
-# stampa a video i dati del task
+# print the task's information
 # task_name : String
 # task : command 
 def print_task( task_name, task ):
@@ -400,27 +419,26 @@ def print_task( task_name, task ):
 
 ## --------------------------- TASK MANAGER
 
-# ciclo di funzionamento del task manager
-# continua fin quando ci sono blocchi blu da spostare, poi chiudi
+# operating loop of the task manager, it continues until there are still blue blocks
 def task_manager_body():
 	global task_arm_left, task_arm_right, frame_block_red, miss
 	
 	task_manager_frequency = rospy.Rate(info.task_manager_freq)
 	
 	while( len(frame_block_blue) > 0 and not rospy.is_shutdown() ):
-		# ottieni un compito per il braccio sinistro se possibile
+		# get a goal for the left arm if possible
 		task_arm_left = get_task_arm_left()
 		print_task( "task_arm_left", task_arm_left )
 		
-		# ottieni un compito per il braccio destro se possibile
+		# get a goal for the right arm if possible
 		task_arm_right = get_task_arm_right()
 		print_task( "task_arm_right", task_arm_right )
 		
-		# esegui i comandi 
+		# execute commands 
 		if( task_arm_left != None or task_arm_right != None ):
 			task_execute_wrapper(task_arm_right, task_arm_left)
 		else:
-			# attendi che la situazione cambi
+			# wait for the situation to change
 			rospy.loginfo( " [task manager] Nothing to do. Waiting..." )
 			task_manager_frequency.sleep()
 	
@@ -430,54 +448,53 @@ def task_manager_body():
 		rospy.loginfo( " [task manager] Job done. (misses: %d)", miss )
 
 
-# ottieni un compito per il braccio destro
+# get a goal for the right arm
 def get_task_arm_right():
 	global frame_block_blue, frame_block_red, frame_goal_red, block_at_center
 	
-	# controlla che non ci siano già blocchi al centro
+	# check if there are already blocks in the center
 	if block_at_center is not None:
 		return None
 	
-	# considera la mano più vicina
+	# get the position of the nearest hand
 	frame_human_hand = get_nearest_hand_pose( frame_goal_red )
 	
-	# non avviare la procedura se la lista è vuota. 
+	# do nothing if the list of the blue blocks is empty
 	if( len(frame_block_blue) == 0 ):
 		return None
 		
 	hand_on_right = block_on_right_table(( "hand", frame_human_hand ))
 	
-	# posizione dei box blu
+	# position of the blue blocks
 	bluebox = frame_block_blue.items()
 	
-	# escludi tutti i blocchi sul lato destro del tavolo 
+	# get all the blocks on the right side of the table
 	bluebox = list(filter( block_on_right_table, bluebox ))
 	
 	if info.use_verbose:
 		rospy.loginfo( " [task manager] (%s) blue blocks to evaluate: %s", "get_task_arm_right", str(dict(bluebox).keys()) )
-	
-	# se la lista contiene un solo elemento, salta direttamente a dopo la 
-	# procedura di ricerca del blocco. 
+	 
+	# if the list contains only one block go directly after the search of a block 
 	
 	if ( len(bluebox) > 1 ):
-		# escludi tutti i blocchi troppo vicini alla mano dell'operatore
+		# exclude all the blocks too close to the operator hand
 		if( len(bluebox) > 0 ):
 			bluebox = list(filter( block_not_near_to_hand, bluebox ))
 		
-		# escludi i blocchi non accessibili
+		# exclude all non accessible blocks
 		if( len(bluebox) > 0 and len(frame_block_red) > 0 ):
 			# redbox  = frame_block_red.items()
 			bluebox = list(filter( block_is_accessible, bluebox ))
 		
-		# ordina i blocchi in base a quello più lontano dalla mano
-		# ordina solo se la len è maggiore di 1
+		# If the lenght is greater than 1 sort the blocks with respect 
+		#to the distance from the human hand
 		if ( len(bluebox) > 1 and hand_on_right ):
 			bluebox.sort(key=dist_block_hand, reverse=True)
 	
-	# chi sarà il blocco adatto?
+	# find the best block
 	if ( len(bluebox) > 0 ):
 		# rospy.loginfo( " [task manager] (%s) found: %s", "get_task_arm_right", str(dict(bluebox).keys()) )
-		# prendi il primo blocco della lista e ritorna il task
+		# get the first element of the list and return the task
 		winner = list(bluebox)[0][0]
 		right_task = commandRequest()
 		right_task.arm = "right"
@@ -485,62 +502,62 @@ def get_task_arm_right():
 		right_task.cube = winner
 		return right_task
 	else:
-		# nessun blocco compatibile
+		# there aren't any blocks available
 		return None
 
 
-# ottieni un compito per il braccio sinistro
+# get a goal for the left arm
 def get_task_arm_left():
 	global frame_block_blue, frame_block_red, frame_goal_blue, block_at_center
 	
-	# non avviare la procedura se la lista è vuota. 
+	# do nothing if the list of the blue blocks is empty 
 	if( len(frame_block_blue) == 0 ):
 		return None
 	
-	# considera la mano più vicina
+	# get the position of the nearest hand
 	frame_human_hand = get_nearest_hand_pose( frame_goal_blue )
 	hand_on_left = block_on_left_table(( "hand", frame_human_hand ))
 	
-	# posizione dei box blu
+	# position of the blue blocks
 	bluebox = frame_block_blue.items()
 	
-	# escludi tutti i blocchi sul lato sinistro del tavolo 
+	# get all the blocks on the left side of the table 
 	bluebox = list(filter( block_on_left_table, bluebox ))
 	
 	if info.use_verbose:
 		rospy.loginfo( " [task manager] (%s) blue blocks to evaluate: %s", "get_task_arm_left", str(dict(bluebox).keys()) )
 	
-	# se la lista contiene un solo elemento, salta direttamente a dopo la 
-	# procedura di ricerca del blocco. 
+	# if the list contains only one block go directly after the search of a block
 	
 	winner = None
 	
 	if ( len(bluebox) > 1 ):
-		# escludi tutti i blocchi troppo vicini alla mano dell'operatore
+		# exclude all the blocks too close to the operator hand
 		if( len(bluebox) > 0 ):
 			bluebox = list(filter( block_not_near_to_hand, bluebox ))
 		
-		# escludi i blocchi non accessibili
+		# exclude all non accessible blocks
 		if( len(bluebox) > 0 and len(frame_block_red) > 0 ):
 			# redbox  = frame_block_red.items()
 			bluebox = list(filter( block_is_accessible, bluebox ))
 		
-		# ordina i blocchi in base a quello più lontano dalla mano
-		# ordina solo se la len è maggiore di 1
+		# If the lenght is greater than 1 sort the blocks with respect 
+		#to the distance from the human hand
 		if ( len(bluebox) >= 1 and ( block_at_center is not None ) and ( ( block_at_center, frame_block_blue[block_at_center] ) in list(bluebox) ) ):
-			# prendi il blocco centrale
+			# pick the central block if one is there
 			winner = block_at_center
 			rospy.loginfo( " [task manager] (%s) forcing block at centre: %s", "get_task_arm_left", block_at_center )
 		elif ( len(bluebox) > 1 and hand_on_left ):
 			bluebox.sort(key=dist_block_hand, reverse=True)
-			# prendi il primo blocco della lista e ritorna il task
+			# pick the first block of the list
 			winner = list(bluebox)[0][0]
 			rospy.loginfo( " [task manager] (%s) winner: %s", "get_task_arm_left", winner )
 	
-	# chi sarà il blocco adatto?
+	# get the chosen block
 	if( winner is None and len(bluebox) == 1 ):
 		winner = list(bluebox)[0][0]
 	if ( winner is not None ):
+		# send the command
 		# rospy.loginfo( " [task manager] (%s) found: %s", "get_task_arm_left", str(dict(bluebox).keys()) )
 		left_task = commandRequest()
 		left_task.arm = "left"
@@ -548,11 +565,11 @@ def get_task_arm_left():
 		left_task.cube = winner
 		return left_task
 	else:
-		# nessun blocco compatibile
+		# there aren't any blocks available
 		return None
 
 
-# decidi se usare l'esecuzione parallela o quella sequenziale
+# decide whether to use the sequential or parallel execution
 def task_execute_wrapper( task_right, task_left ):
 	global frame_block_blue
 	
@@ -562,7 +579,7 @@ def task_execute_wrapper( task_right, task_left ):
 		label_B = frame_block_blue[ task_left.cube ]
 	
 	if ( ( task_right is None ) and ( task_left is None ) ):
-		# nulla da fare, entrambi a None
+		# if there is nothing to do both are None
 		pass
 	elif ( ( task_right is not None ) and ( task_left is not None ) ):
 		if ( distance_between( label_A, label_B ) > info.minimum_distance_parallel ):
@@ -577,8 +594,7 @@ def task_execute_wrapper( task_right, task_left ):
 		task_execute( task_right, task_left )
 
 
-# esegui i task
-# ritorna True se la routine ha avuto successo, false altrimenti
+# execute the rìtask, it will return true if it was successfull, false if that is not the case.
 def task_execute( task_right, task_left ):
 	global srv_controller, srv_baxter_home, frame_block_blue, miss, block_at_center
 	
@@ -588,7 +604,7 @@ def task_execute( task_right, task_left ):
 	left_at_home = False
 	left_box = ""
 	
-	# Invio del right_task al controller
+	# send the left task to the controller
 	if task_left is not None:
 		left_box = task_left.cube
 		res = srv_controller( task_left )
@@ -602,7 +618,7 @@ def task_execute( task_right, task_left ):
 	else:
 		left_at_home = True
 	
-	# Invio del left_task al controller
+	# send the right task to the controller
 	if task_right is not None:
 		res = srv_controller( task_right )
 		if not res.ok:
@@ -616,24 +632,24 @@ def task_execute( task_right, task_left ):
 	else:
 		right_at_home = True
 	
-	# chiudi il controller se entrambi i task falliscono
+	# if both task fail close the controller
 	if right_at_home and left_at_home:
 		return False
 	
-	# attendi che Baxter inizi a muoversi
+	# wait for baxter to start moving
 	baxter_is_moving = False
 	rospy.loginfo( " [task manager] waiting for BAXTER to start movement..." )
 	while not baxter_is_moving:
 		baxter_is_moving = not ( ( srv_baxter_home( arm="right" ) ).at_home and ( srv_baxter_home( arm="left" ) ).at_home )
 	rospy.loginfo( " [task manager] BAXTER is moving; waiting for the tasks..." )
 	
-	# attendi che il robot abbia raggiunto la posizione iniziale
+	# wait for the robto to reach the start position
 	f = rospy.Rate( 10 )
 	while not ( right_at_home and left_at_home ):
-		# attesa
+		# wait
 		f.sleep()
 		
-		# verifica la posizione dei due bracci
+		# check the position of the two arms
 		if not right_at_home:
 			req = at_homeRequest()
 			req.arm = "right"
@@ -647,28 +663,28 @@ def task_execute( task_right, task_left ):
 	
 	baxter_is_moving = False
 	
-	# verifica la nuova posizione del blocco blu
+	# check the new position of the blue block
 	if task_left is not None:
 		rospy.loginfo( " [task manager] checking if %s has reached the goal... ", left_box )
 		if block_in_blue_goal( left_box ):
-			# elimina il blocco dalla raccolta
+			# if the blue box is in the goal delete it from the list
 			rospy.loginfo( " [task manager] -> BLUE block %s in goal", left_box )
 			
-			# verifica che il blocco che ho appena mosso fosse al centro
+			# check if the block was in the center
 			if (block_at_center is not None) and ( block_at_center == left_box ):
 				block_at_center = None
 			
-			# elimina il blocco dalla lista
+			# delete the block from the list
 			del frame_block_blue[ left_box ]
 			
 		else:
 			miss = miss + 1
 			rospy.loginfo( " [task manager] -> BLUE block %s: failed. Retry. (misses: %d)", left_box, miss )
 	
-	# verifica che il blocco sia al centro
+	# check if the block is in the center
 	if task_right is not None:
 		if check_block_is_at_center( frame_block_blue[task_right.cube] ):
-			# il blocco si trova al centro
+			#the block is in the center
 			block_at_center = task_right.cube
 		else:
 			miss = miss + 1
@@ -680,7 +696,7 @@ def task_execute( task_right, task_left ):
 
 
 
-## --------------------------- NODO
+## --------------------------- NODE
 
 def on_shutdown_msg():
     rospy.loginfo( " [task manager] offline" )
@@ -696,7 +712,7 @@ def main():
     rospy.init_node( "task_manager" )
     rospy.on_shutdown( on_shutdown_msg )
     
-    # subscribe: unity_tf o tf a seconda delle impostazioni
+    # subscribe: unity_tf o tf depending on settings
     if info.use_unity:
         rospy.loginfo( " [task manager] subscribe to unity_tf: %s ...", info.topic_unity_tf )
         unity_tf = rospy.Subscriber( info.topic_unity_tf, UnityTf, callback_unity )
@@ -718,7 +734,7 @@ def main():
     srv_baxter_home = rospy.ServiceProxy( info.server_baxter_at_home, at_home )
     rospy.loginfo( " [task manager] service: %s ... OK!", info.server_baxter_at_home )
     
-    # attenti il primo aggiornamento
+    # wait for first update
     while update_counter < 1:
         (rospy.Rate(1)).sleep()
     
@@ -728,7 +744,7 @@ def main():
             rospy.loginfo( " [task manager] -> BLUE block %s in goal", key )
             del frame_block_blue[ key ]
     
-    # ciclo di funzionamento
+    # functioning loop
     rospy.loginfo( " [task manager] online" )
     task_manager_body()
 

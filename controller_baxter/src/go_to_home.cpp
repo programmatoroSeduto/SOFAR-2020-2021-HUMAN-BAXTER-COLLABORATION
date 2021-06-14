@@ -37,9 +37,9 @@ int main(int argc, char** argv)
 // Initialize the ROS Node
 ros::init(argc, argv, "go_to_home");
 ros::NodeHandle n;
-
+// Initialize the subscriber from baxter_joint_states
 ros::Subscriber joint_state_sub = n.subscribe("baxter_joint_states", 10,joints_callback);
-
+// Initialize the publisher for the moveit trajectory
 trajectory_pub = n.advertise<human_baxter_collaboration::BaxterTrajectory>("baxter_moveit_trajectory", 10);
 // Initialize the spinner
 static ros::AsyncSpinner spinner(4);
@@ -70,17 +70,16 @@ return 0;
 }
 
 /***
- * @brief : This function moves the requested block inside the blue box
- * @param block_name : the name of the block I want to move
- * @param group : with which arm I want to move
- * @retval : it returns true if we were able to complete the movement or false if not
+ * @brief : This function moves the baxter to the home position
+ * @param None
+ * @retval : None
  ***/
 void move_to_home()
 {
   MoveGroupInterface::Plan my_plan;
   bool success;
   vector<double> joint_position_right,joint_position_left;
-
+  // set the joint positions
   joint_position_left.push_back(-0.52);
   joint_position_left.push_back(-1.22);
   joint_position_left.push_back(0);
@@ -97,46 +96,60 @@ void move_to_home()
   joint_position_right.push_back(0.75);
   joint_position_right.push_back(0);
 
+  // I calculate the trajectory for the right arm
   right_arm->setJointValueTarget(joint_position_right);
   success = (right_arm->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
-  // If I don't have a feasible trajectory I return false
-  if(!success)printf("ERROREEEEEEEEEE");
+  // If I don't have a feasible trajectory 
+  if(!success)printf("ERROR");
 
-  // I save the tracjectory in a queue
+  // I save the trajectory in a queue
   human_baxter_collaboration::BaxterTrajectory my_trajectory_right;
   my_trajectory_right.arm="right";
   my_trajectory_right.trajectory.push_back(my_plan.trajectory_);
+  // I publish the trajectory
   trajectory_pub.publish(my_trajectory_right);
 
-
+  // I calculate the trajectory for the left arm
   left_arm->setJointValueTarget(joint_position_left);
   success = (left_arm->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
-  // If I don't have a feasible trajectory I return false
-  if(!success)printf("ERROREEEEEEEEEE");
+  // If I don't have a feasible trajectory 
+  if(!success)printf("ERROR");
 
   // I save the tracjectory in a queue
   human_baxter_collaboration::BaxterTrajectory my_trajectory_left;
   my_trajectory_left.arm="left";
   my_trajectory_left.trajectory.push_back(my_plan.trajectory_);
+  // I publish the trajectory
   trajectory_pub.publish(my_trajectory_left);
 
 }
 
+/***
+ * @brief : This function is called periodically and updates the start state of the robot
+ * @param none
+ * @retval : none
+ ***/
 void update_start_state(){
+  //Updating the right arm: it retrieves the current position and sets it as the start state	
   robot_state::RobotState start_state_right(*right_arm->getCurrentState());
   const robot_state::JointModelGroup *joint_model_group_right =start_state_right.getJointModelGroup(right_arm->getName());
   start_state_right.setJointGroupPositions(joint_model_group_right, right_arm_msg_joint.position);
   right_arm->setStartState(start_state_right);
 
-
+  //Updating the left arm: it retrieves the current position and sets it as the start state
   robot_state::RobotState start_state_left(*left_arm->getCurrentState());
   const robot_state::JointModelGroup *joint_model_group_left =start_state_left.getJointModelGroup(left_arm->getName());
   start_state_left.setJointGroupPositions(joint_model_group_left, left_arm_msg_joint.position);
   left_arm->setStartState(start_state_left);
 }
 
+/***
+ * @brief : This function is called when new data are available on the topic /baxter_joint_states
+ * @param msg : a sensor message
+ * @retval : None
+ ***/
 void joints_callback(const sensor_msgs::JointState& msg)
 {
  right_arm_msg_joint=msg;
