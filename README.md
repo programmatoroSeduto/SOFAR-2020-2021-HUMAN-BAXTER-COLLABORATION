@@ -10,12 +10,20 @@
 
 Thanks to [Marco Gabriele Fedozzi]() for the Docker simulation environment, and to [Simone Macciò]() for the simulation environment and the ROS side packages. 
 
+![Cover](documentation/cover.png)
+
 # Setting up and Running the project
 
 ## Prerequisites
 
 - The project uses the "vanilla" version of the Unity simulation, with no changes. Link to the environment: [here](https://github.com/TheEngineRoom-UniGe/SofAR-Human-Robot-Collaboration.git). *Note well: we tried to make this work with no changes, so __if you modify this environment, the simulation couldn't properly work.__* 
 - Some packages are required in order to esecute the project in the simulated environment. See the following section.
+
+## Windows 10 - Unity Environment + Docker + ROS
+
+If you're using ROS-Docker in Windows 10 plus Unity, here is a useful Docker Image: [hypothe/Sofar-ROS](https://hub.docker.com/r/hypothe/sofar_ros). It is already configured for coding the assignment. Strictly follow the instruction there, otherwise it could not properly work. 
+
+---
 
 ## How to set up the project
 
@@ -52,7 +60,7 @@ For installing it, simply go into your workspace, and then launch this command:
 ```bash
 git clone https://github.com/RethinkRobotics/baxter_common.git -b master baxter_common
 ```
-
+---
 
 ## How to run the project
 
@@ -94,21 +102,27 @@ Last step: launch the task manager. After this, the robot will immediately start
 rosrun controller_baxter task_manager.py
 ```
 
+---
+
 ## Time to Practice!
 
 In case it is not possible to set up the project here we provided two small video experiments for our project.
 
 - Test 1, using `unity_tf` topic
 
-    [BAXTER-FINAL-unity.mp4](https://drive.google.com/file/d/1bliD6EbrQrFFnVxbXdXl74VSJtnRRKKW/view?usp=sharing)
+    > *[Test simulated BAXTER using `/unity_tf` as input topic](https://drive.google.com/file/d/1bliD6EbrQrFFnVxbXdXl74VSJtnRRKKW/view?usp=sharing)*
 
 - Test 2, using `tf` topic
 
-    [BAXTER-FINAL-tf.mp4](https://drive.google.com/file/d/1p-_naDokhO7L7R_C7RtqwC0Slp7nUhX5/view?usp=sharing)
+    > *[Test simulated BAXTER using `/tf` as input topic](https://drive.google.com/file/d/1p-_naDokhO7L7R_C7RtqwC0Slp7nUhX5/view?usp=sharing)*
+
+---
 
 # Configuring the task manager
 
 In the folder `controller_baxter/include/controller_baxter/sim_infos.py` you can find all the settings needed in order to let the task manager reasoning on the situation, and other parameters. Here is a little explaination of the most important ones. 
+
+If you want to know more, [here](https://programmatoroseduto.github.io/SOFAR-2020-2021-HUMAN-BAXTER-COLLABORATION/) you can explore the code of the repository. 
 
 ## Channels
 
