@@ -2,7 +2,7 @@
 
 *Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi* 
 - **Task Manager**: Francesco Ganci, Zoe Betta
-- **Controller Baxter**: Lorenzo Causa, Federico Zecchi
+- **Controller Baxter, baxter_at_home**: Lorenzo Causa, Federico Zecchi
 - **Testing**: Francesco Ganci, Lorenzo Causa, Federico Zecchi
 - **Documentation**: Zoe betta, Francesco Ganci
 - **Documentation revision**: Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi
