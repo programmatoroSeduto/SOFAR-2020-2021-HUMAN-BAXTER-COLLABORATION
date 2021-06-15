@@ -1,26 +1,3 @@
-/** @ package controller_baxter
-* 
-*  \file go_to_home.cpp
-*  \brief this file sets the home position if needed in the beginning
-*
-*  \author Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi
-*  \version 1.0
-*  \date 12/06/2021
-*  \details
-* 
-*  Subscribes to: <BR>
-*	 baxter_joint_states
-*
-*  Publishes to: <BR>
-*	 baxter_moveit_trajectory
-*
-*  Services: <BR>
-*    None
-*
-*  Description: <BR>
-*  	This node implements 
-*/
-
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <tf2_msgs/TFMessage.h>
@@ -54,13 +31,6 @@ void move_to_home();
 void update_start_state();
 void initialize_joints();
 
-/**
- * \brief: Main function 
- * \param argc, argv
- * \retval: 0
- * 
- * It initializes the ros node and all the needed subscribers and publishers.
- */
 int main(int argc, char** argv)
 {
 
@@ -99,14 +69,11 @@ spinner.stop();
 return 0;
 }
 
-/**
- * \brief:moves the baxter to the home position
- * \param None
- * \retval: None
- * 
- * This function calculates the home position by manually setting the values,
- * it then calculates the moveit trajectory and publishes it
- */
+/***
+ * @brief : This function moves the baxter to the home position
+ * @param None
+ * @retval : None
+ ***/
 void move_to_home()
 {
   MoveGroupInterface::Plan my_plan;
@@ -159,14 +126,11 @@ void move_to_home()
 
 }
 
-/**
- * \brief : updates the start state
- * \param none
- * \retval : none
- * 
- * This function retrieves the position of the joints of the robot in the 
- * beginning and sets them as the initial configuration to start the trajectory from.
- */
+/***
+ * @brief : This function is called periodically and updates the start state of the robot
+ * @param none
+ * @retval : none
+ ***/
 void update_start_state(){
   //Updating the right arm: it retrieves the current position and sets it as the start state	
   robot_state::RobotState start_state_right(*right_arm->getCurrentState());
@@ -181,14 +145,11 @@ void update_start_state(){
   left_arm->setStartState(start_state_left);
 }
 
-/**
- * \brief: called when new data are available on the topic /baxter_joint_states
- * \param msg : a sensor message
- * \retval: None
- * 
- * This function deletes redundant information and saves them in variables
- * used later in the scripts
- */
+/***
+ * @brief : This function is called when new data are available on the topic /baxter_joint_states
+ * @param msg : a sensor message
+ * @retval : None
+ ***/
 void joints_callback(const sensor_msgs::JointState& msg)
 {
  right_arm_msg_joint=msg;

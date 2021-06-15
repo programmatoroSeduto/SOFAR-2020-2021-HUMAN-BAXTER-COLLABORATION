@@ -2,7 +2,7 @@
 
 ## @package controller_baxter
 #
-#  \file task_manager.py
+#  \file gtask_manager.py
 #  \brief This file allows the baxter to decide what to do
 #
 #  \authors Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi
@@ -21,18 +21,7 @@
 #
 #  Description: <BR>
 #    This node implements the choice of the actions that the two arms need to complete.
-#    In order to do so we  decided to force the right arm to only pick blocks from 
-#    the right side of the table and putting them at the center of the table. If
-#    there is already a block in the center then the right arm waits and does nothing.
-#    If there is not a block it decides to pick the block that is not too close
-#    to the hand of the operator that is accessible and betwee those the furthest away
-#    from the hands. Similar for the left arm, it picks blocks from the center or from the
-#    left side of the table and it puts them in the goal box. The rules to 
-#    decide which box to pick are similar to the ones of the right arm: it excludes
-#    a priori all the blocks too close to the human operator and all the blocks non 
-#    accessible; then it picks a block in the center, if present, or it looks for the
-#    block furthest away from the hand of the human operator. These procedures
-#    are repeated until all blocks are in the goal box.
+#    In order to do so we  decided to force the right arm to only pick   
 
 import rospy
 from controller_baxter.srv import at_home, at_homeRequest, at_homeResponse
@@ -46,23 +35,30 @@ import sys
 
 import controller_baxter.sim_infos as info
 
+
+
 ## --------------------------- GLOBAL VARIABLES
 
 # position of the hand of the operator
 frame_human_hand_right = Pose()
 frame_human_hand_left = Pose()
 
+
 # position of all red blocks
 frame_block_red = { "A" : Pose(), "L" : Pose(), "B" : Pose(), "H" : Pose(), "D" : Pose(), "F" : Pose() }
+
 
 # position of all blue blocks
 frame_block_blue = { "E" : Pose(), "C" : Pose(), "I" : Pose(), "G" : Pose(), "M" : Pose() }
 
+
 # frame of the blue goal
 frame_goal_blue = Pose()
 
+
 # frame of the red goal
 frame_goal_red = Pose()
+
 
 # position of the table
 frame_table = Pose()
@@ -70,33 +66,35 @@ frame_table.position.x = 0.5
 frame_table.position.y = 0
 frame_table.position.z = 0
 
+
 # how many times the movement failed
 miss = 0
 
+
 # is the center free?
 block_at_center = None
+
+
 
 ## --------------------------- TOPIC AND SERVER
 
 # counter of updates
 update_counter = 0
 
+
 # service controller_server"
 srv_controller = None
+
 
 # service "baxter_at_home_server"
 srv_baxter_home = None
 
+
 # topic "unity_tf"
 msg_unity_tf = None
 
-##
-#	\brief end of update log
-#	\param None
-#	\return : None
-# 	
-#	This function updates the log with the positon of the frames of the blue 
-#   and red blocks. It also saves the iteration number.
+
+# end of update log
 def update_log( ):
 	global update_counter
 	global frame_human_hand, frame_block_red, frame_block_blue, frame_table, frame_goal_blue, frame_goal_red
@@ -113,14 +111,8 @@ def update_log( ):
 		rospy.loginfo( " [task manager] frame_block_red:\n========\n %s\n========\n", str( frame_block_red ) )
 		rospy.loginfo( " [task manager] frame_block_blue:\n========\n %s\n========\n", str( frame_block_blue ) )
 
-##
-#	\brief updating the position of red blocks
-#	\param None
-#	\return : None
-# 	
-#	This function updates the positon of the red blocks deleting the ones that
-#   have alreaby been put in the goal from the list of available blocks. 
-#   By doing so we are able to quickly check if evrything is in the correct place
+
+# updating the position of red blocks
 def update_red_blocks( ):
 	global update_counter
 	global frame_human_hand, frame_block_red, frame_block_blue, frame_table, frame_goal_blue, frame_goal_red
@@ -134,13 +126,8 @@ def update_red_blocks( ):
 			if len( frame_block_red ) == 0 :
 				rospy.loginfo( " [task manager] human job done." )
 
-##
-#	\brief trasforming from TransformStamped to Pose
-#	\param Data : in format TransformStamped, the data I want to obtain in Pose format
-#	\return : to_return the data in Pose format
-# 	
-#	This function transforms the input data from TransformedStamped to Pose
-#   by assigning the respective members.
+
+# trasforming from TransformStamped to Pose
 def tranformStamped_to_pose( data ):
 	to_return = Pose()
 	to_return.orientation = data.transforms[0].transform.rotation
@@ -150,13 +137,8 @@ def tranformStamped_to_pose( data ):
 	
 	return to_return
 
-##
-#	\brief callback topic unity
-#	\param Data : data received from unity
-#	\return : None
-# 	
-#	This function saves the information about each block received by the subscriber 
-#   in the correspective global variable.
+
+# callback topic unity
 def callback_unity( data ):
 	global update_counter
 	global frame_human_hand, frame_block_red, frame_block_blue, frame_table, frame_goal_blue, frame_goal_red
@@ -198,13 +180,8 @@ def callback_unity( data ):
 	# log di fine aggiornamento
 	update_log( )
 
-##
-#	\brief callback topic tf
-#	\param Data : data received from tf
-#	\return : None
-# 	
-#	This function receives the information, divides them and saves them 
-#   in the corresponding global variable.
+
+# callback tf
 def callback_tf( data ):
 	global update_counter
 	global frame_human_hand, frame_block_red, frame_block_blue, frame_table, frame_goal_blue, frame_goal_red
@@ -248,17 +225,11 @@ def callback_tf( data ):
 	else:
 		update_counter = update_counter + 1
 
+
+
 ## --------------------------- FUNCTIONS
 
-##
-#	\brief distance between two poses
-#	\param pose_A : variable of type Pose
-#   \param pose_B : variable of type Pose 
-#	\return : the distance
-# 	
-#	This function calculates the euclidean distance bewtween two poses
-#   without considering the z coordinate. It calculates the euclidean distance
-#   considering the objects on the plane.
+# distance between two poses
 def distance_between( pose_A, pose_B ):
 	A = [ pose_A.position.y, pose_A.position.x ]
 	B = [ pose_B.position.y, pose_B.position.x ]
@@ -268,14 +239,9 @@ def distance_between( pose_A, pose_B ):
 	
 	return math.sqrt( (B[0]-A[0])**2 + (B[1]-A[1])**2 )
 
-##
-#	\brief checks whether the red block is in the red goal
-#	\param elem : a string representing the block I want to check
-#	\return : True if the block is in the goal, false otherwise
-# 	
-#	This function controls if a given red block is inside the red box that 
-#   is the goal. It checks if the x and y coordinate of the center of the
-#   frame of the object are distant more than half the size of the target box.
+
+# checks whether the red block is in the goal
+# elem : String
 def block_in_red_goal( elem ):
 	global frame_block_red, frame_goal_red
 	
@@ -295,14 +261,9 @@ def block_in_red_goal( elem ):
 	
 	return True
 
-##
-#	\brief checks whether the blue block is in the blue goal
-#	\param elem : a string representing the block I want to check
-#	\return : True if the block is in the goal, false otherwise
-# 	
-#	This function controls if a given blue block is inside blue box that 
-#   is the goal. It checks if the x and y coordinate of the center of the
-#   frame of the object are distant more than half the size of the target box.
+
+# check whether a blue block is inside the goal
+# elem : String
 def block_in_blue_goal( elem ):
 	global frame_block_blue, frame_goal_blue
 
@@ -321,14 +282,9 @@ def block_in_blue_goal( elem ):
 	
 	return True
 
-##
-#	\brief checks whether a block is on the right side of the table
-#	\param elem : ( 'name', Pose ) saves the name of the object and its Pose
-#	\return : True if the block is in the right side, false otherwise
-# 	
-#	This function controls if a given block is in the right side of the table
-#   by checking if the x and y coordinates of the center of the frame are
-#   in the right side of the table, the side with negative coordinates.
+
+# checks if the robot is on the right side of the table
+#  elem : ( 'name', Pose )
 def block_on_right_table( elem ):
 	global frame_table
 	
@@ -347,14 +303,9 @@ def block_on_right_table( elem ):
 	
 	return True
 
-##
-#	\brief checks whether a block is on the left side of the table
-#	\param elem : ( 'name', Pose ) saves the name of the object and its Pose
-#	\return : True if the block is in the right side, false otherwise
-# 	
-#	This function controls if a given block is in the left side of the table
-#   by checking if the x and y coordinates of the center of the frame are
-#   in the left side of the table, the side with positive coordinates.
+
+# checks if the robot is on the left side of the table
+#  elem : ( 'name', Pose )
 def block_on_left_table( elem ):
 	global frame_table
 	
@@ -373,14 +324,9 @@ def block_on_left_table( elem ):
 	
 	return True
 
-##
-#	\brief get the closest position of the hand
-#	\param elem : Pose the position with respect to which I want to find the closes had
-#	\return : the frame of the closest hand
-# 	
-#	This function checks the distance of the position given as input from the
-#   left and right hand of the operator, it returns the frame of the hand with
-#   the smaller distance
+
+# get the closest position of the hand
+# elem: Pose
 def get_nearest_hand_pose( elem ):
 	global frame_human_hand_right, frame_human_hand_left
 	frame_human_hand = None
@@ -389,17 +335,9 @@ def get_nearest_hand_pose( elem ):
 	else:
 		return frame_human_hand_left
 
+
 # signal if the block is too close to the operator
-#  elem : ( 'name', Pose ) 
-##
-#	\brief signal if the block is too close to the operator
-#	\param elem : ( 'name', Pose ) saves the name of the object and its Pose
-#	\return : true if the hand is further than a given threshold, false otherwise
-# 	
-#	This function first finds the nearest hand then calculates the euclidean
-#   distance of the x and y coordiantes of the frame of the block and the 
-#   frame of the hand. It doesn't consider the distance along z. It returns true 
-#   if the disance is greater than a given threshold, false otherwise
+#  elem : ( 'name', Pose )
 def block_not_near_to_hand( elem ):
 	# look for the closest hand to the block
 	frame_human_hand = get_nearest_hand_pose( elem[1] )
@@ -414,18 +352,9 @@ def block_not_near_to_hand( elem ):
 	
 	return True if ( dist >= info.sz_hand ) else False
 
-##
-#	\brief checks if the block is accessible
-#	\param elem : ( 'name', Pose ) saves the name of the object and its Pose
-#	\return : true if the hand is further than a given threshold, false otherwise
-# 	
-#	This function checks the distance between the block given as input and 
-#   all of the red blocks. The distance are calculated along x, y and z.
-#   If the distances are less than a given threshold then the block is not 
-#   accessible and it returns false. As soon as the block is not accessible 
-#   with respect to another red block the function returns false. Only if 
-#   the block is accessible with respect to all redblocks then the function
-#   returns true.
+
+# checks if the block is accessible
+#  elem : ( 'name', Pose )
 def block_is_accessible( elem_b ):
 	global frame_block_red
 
@@ -442,14 +371,9 @@ def block_is_accessible( elem_b ):
 
 	return True
 
-##
-#	\brief calculate the distance between the hand and a block
-#	\param elem : ( 'name', Pose ) saves the name of the object and its Pose
-#	\return : the euclidean distance between the block and the closest hand
-# 	
-#	This function first finds the closest hand to the block given as input
-#   and then calculates the euclidean distance between the x and y coordinates
-#   of the block and the nearest hand
+
+# calculate the distance between the hand and a block
+#  elem : ( 'name', Pose )
 def dist_block_hand( elem ):
 	# look for the closest hand to the block
 	frame_human_hand = get_nearest_hand_pose( elem[1] )
@@ -463,14 +387,9 @@ def dist_block_hand( elem ):
 	
 	return math.sqrt( (P[0]-O[0])**2 + (P[1]-O[1])**2 )
 
-##
-#	\brief check if the block is in the center of the table
-#	\param elem : Pose, the position of the block I want to check
-#	\return : true if the block is in the center
-# 	
-#	This function finds the position of the center of the table then 
-#   calculates the distance between the two elements. It returns true if
-#   the distance is below a threshold, false otherwise
+
+# check if the block is in the center of the table
+#  elem : Pose
 def check_block_is_at_center( elem ):
 	O = Pose()
 	O.position.x = info.sz_table[0]/2
@@ -486,31 +405,21 @@ def check_block_is_at_center( elem ):
 	#returns true if the distance is less than a threshold
 	return ( dist < info.center_dispacement )
 
-##
-#	\brief print the task's information
-#	\param task_name : String
-#   \param task : command 
-#	\return : None
-# 	
-#	This function just prints information about the tasks, such as which arm
-#   which position and which cube.
+
+# print the task's information
+# task_name : String
+# task : command 
 def print_task( task_name, task ):
 	if task is not None:
 		rospy.loginfo( " [task manager] TASK [%s] arm(%s) pos(%s) cube(%s)", task_name, task.arm, task.pos, task.cube )
 	else:
 		rospy.loginfo( " [task manager] TASK [%s] is None.", task_name )
 
+
+
 ## --------------------------- TASK MANAGER
 
-##
-#	\brief operating loop of the task manager, it continues until there are still blue blocks
-#	\param : None
-#	\return : None
-# 	
-#	This function searches for a goal for both the left and the right arm,
-#   if we found at least one task we execute it, if not we wait for the 
-#   situation to change. We repeat this until we have blue blocks available.
-#   When there are no more blue blocks I close the node.
+# operating loop of the task manager, it continues until there are still blue blocks
 def task_manager_body():
 	global task_arm_left, task_arm_right, frame_block_red, miss
 	
@@ -538,17 +447,8 @@ def task_manager_body():
 	else:
 		rospy.loginfo( " [task manager] Job done. (misses: %d)", miss )
 
-##
-#	\brief get a goal for the right arm
-#	\param : None
-#	\return : None if there are no tasks, the task otherwise
-# 	
-#	This function searches for a goal for the right arm checking first if there 
-#   is a block already in the center. If that is the case the right arm does
-#   nothing. If the center is free I exclude from the choice all the blocks
-#   too close to the operator and the blocks not accessible. From the remaining
-#   blocks I pick the one with the greatest distance from the hand of the operator.
-#   At the end it sets the message to send to the server.
+
+# get a goal for the right arm
 def get_task_arm_right():
 	global frame_block_blue, frame_block_red, frame_goal_red, block_at_center
 	
@@ -605,16 +505,8 @@ def get_task_arm_right():
 		# there aren't any blocks available
 		return None
 
-##
-#	\brief get a goal for the left arm
-#	\param : None
-#	\return : None if there are no tasks, the task otherwise
-# 	
-#	This function searches for a goal for the left arm excluding all blocks
-#   that are too close to the hand of the operator and all non accessible blocks. 
-#   From the remaining ones I prioritize the block in the center and then
-#   only if no blocks are in the center it picks the furthest one from the 
-#   hand of the operator. At the end it sets the message to send to the server.
+
+# get a goal for the left arm
 def get_task_arm_left():
 	global frame_block_blue, frame_block_red, frame_goal_blue, block_at_center
 	
@@ -676,18 +568,8 @@ def get_task_arm_left():
 		# there aren't any blocks available
 		return None
 
-##
-#	\brief decide whether to use the sequential or parallel execution
-#	\param task_right the task planned for the right arm
-#   \param task_left the task planned for the left arm
-#	\return : None 
-# 	
-#	This function checks if we have a task for both arms, and saves the position
-#   of the blocks that needs to be picked up from the tasks in two varibales.
-#   If we have to execute a task with both arms I check if the distance 
-#   between the two blocks is greater than a given threshold, in that case it
-#   calls the execution of the two arms in parallel while if they are too
-#   close it launches first the one of the right arm and after the one of the left arm.
+
+# decide whether to use the sequential or parallel execution
 def task_execute_wrapper( task_right, task_left ):
 	global frame_block_blue
 	
@@ -711,19 +593,8 @@ def task_execute_wrapper( task_right, task_left ):
 		rospy.loginfo( " [task manager] execution: only %s", ( "right" if ( task_right is not None ) else "left" ) )
 		task_execute( task_right, task_left )
 
-##
-#	\brief execute the task
-#	\param task_right the task planned for the right arm
-#   \param task_left the task planned for the left arm
-#	\return : it will return true if it was successfull, false if that is not the case.
-# 	
-#	This function sends the tasks to the planner and returns false if the call 
-#   has not been executed, it sends the command for the left and the right.
-#   In order to see if the robot has completed the task given I check if 
-#   the arm has reached the home position, this control is implemented by
-#   calling the server baxter_at_home.
-#   I also implement a check on the final position of the block to see
-#   if it was successful.
+
+# execute the rìtask, it will return true if it was successfull, false if that is not the case.
 def task_execute( task_right, task_left ):
 	global srv_controller, srv_baxter_home, frame_block_blue, miss, block_at_center
 	
@@ -766,13 +637,17 @@ def task_execute( task_right, task_left ):
 		return False
 	
 	# wait for baxter to start moving
+	'''
 	baxter_is_moving = False
 	rospy.loginfo( " [task manager] waiting for BAXTER to start movement..." )
 	while not baxter_is_moving:
 		baxter_is_moving = not ( ( srv_baxter_home( arm="right" ) ).at_home and ( srv_baxter_home( arm="left" ) ).at_home )
 	rospy.loginfo( " [task manager] BAXTER is moving; waiting for the tasks..." )
+	'''
+	
 	
 	# wait for the robto to reach the start position
+	'''
 	f = rospy.Rate( 10 )
 	while not ( right_at_home and left_at_home ):
 		# wait
@@ -789,6 +664,10 @@ def task_execute( task_right, task_left ):
 			req.arm = "left"
 			left_at_home = srv_baxter_home( req )
 			left_at_home = left_at_home.at_home
+	'''
+	(rospy.Rate( 1/10 )).sleep()
+	right_at_home = True
+	left_at_home = True
 	
 	baxter_is_moving = False
 	
@@ -823,23 +702,14 @@ def task_execute( task_right, task_left ):
 	
 	return True
 
+
+
 ## --------------------------- NODE
 
-##
-#	\brief prints information about the state of the node
-#	\param None
-#	\return : None
-#
 def on_shutdown_msg():
     rospy.loginfo( " [task manager] offline" )
 
-##
-#	\brief main function
-#	\param None
-#	\return : None
-#
-#    Initializes the ros node and also the subscribers and services needed.
-#    It updates the position of all the blocks and it starts the funcitoning loop.
+
 def main():
     global srv_controller, msg_unity_tf, srv_baxter_home, update_counter
     global frame_block_blue, frame_block_red
@@ -887,6 +757,8 @@ def main():
     # functioning loop
     rospy.loginfo( " [task manager] online" )
     task_manager_body()
+
+
 
 if __name__ == "__main__":
     main()

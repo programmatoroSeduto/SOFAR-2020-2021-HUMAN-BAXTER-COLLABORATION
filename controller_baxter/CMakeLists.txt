@@ -53,3 +53,5 @@ target_link_libraries(go_to_home ${catkin_LIBRARIES})
 add_dependencies(go_to_home ${catkin_EXPORTED_TARGETS})
 
 catkin_install_python( PROGRAMS scripts/task_manager.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION} )
+
+catkin_install_python( PROGRAMS scripts/debug.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION} )

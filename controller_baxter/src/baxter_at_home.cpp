@@ -1,28 +1,3 @@
-/** @ package controller_baxter
-* 
-*  \file baxter_at_home.cpp
-*  \brief this file checks if the baxter reached the home position
-*
-*  \author Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi
-*  \version 1.0
-*  \date 12/06/2021
-*  \details
-* 
-*  Subscribes to: <BR>
-*	 baxter_joint_states
-*
-*  Publishes to: <BR>
-*	 none
-*
-*  Services: <BR>
-*    baxter_at_home_server
-*
-*  Description: <BR>
-*  	This node implements the behaviour to check if one arm, received as
-*   input, is in the configuration of the start state. It returns true if
-*   that is the case, false otherwise.
-*/
-
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <tf2_msgs/TFMessage.h>
@@ -53,14 +28,6 @@ bool server_callback(controller_baxter::at_home::Request &req,controller_baxter:
 //FUNCTIONS
 bool very_close(double A ,double B);
 
-/**
- * \brief: Main function 
- * \param argc, argv
- * \retval: 0
- * 
- * It initializes the ros node and all the needed subscribers and publishers,
- * it also initializes the server
- */
 int main(int argc, char** argv)
 {
 // Initialize the ROS Node
@@ -76,14 +43,11 @@ while(ros::ok()){
  }
 }
 
-/**
- * \brief: called when new data are available on the topic /baxter_joint_states
- * \param msg : a sensor message
- * \retval: None
- * 
- * This function deletes redundant information and saves them in variables
- * used later in the scripts
- */
+/***
+ * @brief : This function is called when new data are available on the topic /baxter_joint_states
+ * @param msg : a sensor message
+ * @retval : None
+ ***/
 void joints_callback(const sensor_msgs::JointState& msg)
 {
  // deletes useless information and saves the joint configuration in two variables
@@ -104,15 +68,13 @@ void joints_callback(const sensor_msgs::JointState& msg)
 
 }
 
-/**
- * \brief: called when a server request arrives
- * \param req : the command request
- * \param res : the command response
- * \retval: true
- * 
- * This function is the server callback, it checks the joints of the requested
- * arm and sees if the values are close enough to the start configuration.
- */
+/***
+ * @brief : This function is called when a server request arrives, 
+ *          it is needed to check if a given arm is at home
+ * @param req : the command request
+ * @param res : the command response
+ * @retval : true
+ ***/
 bool server_callback(controller_baxter::at_home::Request &req,controller_baxter::at_home::Response &res){
  // I initialize the boolen variable to false	
  res.at_home=false;	
@@ -145,17 +107,15 @@ bool server_callback(controller_baxter::at_home::Request &req,controller_baxter:
  return true;	
 }
 
-/**
- * \brief: checks if two joint values are close
- * \param A: joint value
- * \param B: joint value
- * \retval: true
- * 
- * We check if the difference between two numbers is between plus or minus 0.01
- */
+/***
+ * @brief : This function is needed to check if two joint values are close
+ * @param A: joint value
+ * @param B: joint value
+ * @retval : true
+ ***/
 bool very_close(double A ,double B){
 // checks if the distance is less than 0.01 in absolute value	
-if(A<B+0.01 && A>B-0.01)return true;
+if(A<B+00.1 && A>B-0.01)return true;
 return false;		
 }
 

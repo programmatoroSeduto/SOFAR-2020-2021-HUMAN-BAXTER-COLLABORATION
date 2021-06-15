@@ -1,142 +1,126 @@
-# SofAR 2020/2021 - HUMAN BAXTER COLLABORATION
+# Human Baxter Collaboration - Real Implementation 
 
-*Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi* 
-- **Task Manager**: Francesco Ganci, Zoe Betta
-- **Controller Baxter, baxter_at_home**: Lorenzo Causa, Federico Zecchi
-- **Testing**: Francesco Ganci, Lorenzo Causa, Federico Zecchi
-- **Documentation**: Zoe betta, Francesco Ganci
-- **Documentation revision**: Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi
-- **GitHub repo maintainance**: Francesco Ganci
+## Come avviare la simulazione sul robot reale
 
-Thanks to [Marco Gabriele Fedozzi]() for the Docker simulation environment, and to [Simone Macciò]() for the simulation environment and the ROS side packages. 
+Avvio della coumunicazione col vero Baxter:
 
-# Setting up and Running the project
+> roslaunch '/home/simone/Desktop/sofar_ws/src/human_baxter_collaboration/launch/joint_trajectory_client.launch' 
 
-## Prerequisites
+Per chiudere i gripper nel caso rimanessero aperti:
 
-- The project uses the "vanilla" version of the Unity simulation, with no changes. Link to the environment: [here](https://github.com/TheEngineRoom-UniGe/SofAR-Human-Robot-Collaboration.git). *Note well: we tried to make this work with no changes, so __if you modify this environment, the simulation couldn't properly work.__* 
-- Some packages are required in order to esecute the project in the simulated environment. See the following section.
+> rosrun baxter_tools tuck_arms.py -u
 
-## How to set up the project
+A questo punto, avvia
 
-In order to install the package:
+> roslaunch human_baxter_collaboration human_baxter_collaboration.launch
 
-1. create a workspace where to put the package. 
-2. Make sure you have the reuired components in order to make the project run! 
-3. Put the folder *controller_baxter* into the *src* folder of your workspace
-4. then, build the workspace by `catkin_make`.
+a quel punto, avvia l'architettura come al solito. 
 
-Here are the references to the required packages.
+## Windows - connessione di Unity
 
-### DEPT -- MoveIt
+Innanzitutto, controlla che il profilo di rete sia impostato su *Pubblico*.
 
-In order to install MoveIt, launch the following instruction:
+I sistemi di "protezione" di Windows 10 impediscono a Unity di comunicare via socket con Baxter. Per risolvere il problema, segui questi passaggi:
 
-```bash
-sudo apt install ros-noetic-moveit
-```
+1. "Windows Defender Firewall con Sicurezza Avanzata"
+2. finestra principale in mezzo -> anteprima -> "Proprietà Windows Defender Firewall"
+3. tab "Profilo di Dominio" -> scheda "Stato" -> "Stato firewall" -> seleziona **Disattivato**
+4. ora cerca "protezione firewall e della rete"
+5. disattiva il firewall sulla rete pubblica
 
-### DEPT -- human_baxter_collaboration - ros_tcp_endpoint - (Unity Project) Human-Robot-Collaboration
+## Windows - trovare il mio IP
 
-You can find [here](https://github.com/TheEngineRoom-UniGe/SofAR-Human-Robot-Collaboration.git) the repository, containing all the tools for running the simulated Baxter. 
+Per avviare gli script su Baxter è necessario sapere il proprio indirizzo IP. 
 
-- **ROS SIDE**: download the repository into your ROS environment, and then copy the entire content of the folder *ROS Packages* alongside with the *controller_baxter* package. You can also directly copy the folder itself into *src*: the system is capable of recognizing the package. 
-- **UNITY SIDE**: download the content of the folder *Unity Projects* wherever you want in your Host system, and open it with Unity. 
+In Windows 10, fai così:
 
-### DEPT -- baxter_common
+1. clic sulla connessione wifi nella barra delle notifiche
+2. stato -> stato della rete -> tasto "Proprietà"
+3. sezione "Proprietà" -> trovi il tuo indirizzo in "Indirizzo IPv4"
 
-You can find [here](https://github.com/RethinkRobotics/baxter_common) the package, which contains the description of Baxter. This is required in order to get the plan in MoveIt. 
+## Baxter reale Vs. Simulazione 
 
-For installing it, simply go into your workspace, and then launch this command:
+Purtroppo il robot simulato è diverso dal robot reale sotto molti aspetti. Non assicuro di ricordare tutte le modifiche necessarie. Elenco qui di seguito solo le principali: 
 
-```bash
-git clone https://github.com/RethinkRobotics/baxter_common.git -b master baxter_common
-```
+- il gripper viene controllato dallo script fornito dal proessore, ma eventualmente è possibile creare un nodo che gestisca il gripper quando serve e che prenda i comandi dal *controller_baxter*
 
+- Il braccio non torna alla posizione iniziale al termine del movimento, ma rimane nella posizione data. Questo si risolve apportando modifiche al *controller_baxter*. 
+  La seguente riga va commentata per mantenere una coerenza con il robot reale. Altrimenti quello in Unity torna alla rest position, mentre il robot reale rimane lì.
 
-## How to run the project
+    ```c#
+    // in Scripts/BaxterController.cs
+    // riga 408
+    GoToRestPosition(response.arm);
+    ```
 
-We're using Windows 10 as host for Unity and the Docker Virtual Machine through a [localhost](http://localhost) connection. 
+- La posizione iniziale del Baxter reale non coincide con quella del Baxter simulato (no comment...). Vedi *Scripts/BaxterController.cs* da Unity. Anche qui, una modifica al *controller_baxter* è necessaria. 
 
-First of all, in your ROS environment, launch the server:
+    ```c#
+    // righe 242, 269
+    // prima
+    float[] target = { -30f, -70f, 0f, 99f, 0f, 43f, 0f };
+    float[] target = { 30.0f, -70.0f, 0f, 99.0f, 0f, 43.0f, 0f };
 
-```bash
-roslaunch human_baxter_collaboration human_baxter_collaboration.launch &
-```
+    // dopo
+    float[] target = { -0.5f, -57f, -68f, 110f, 38f, 59f, -29f };
+    float[] target = { 0.5f, -57f, 68f, 110f, -38f, 59f, 29f };
 
-On windows, launch the package `MMILauncher.exe`: it will let the human move in the simulation.
+    ```
 
-If the connection works fine, a print similar to this one should appear on your shell:
+- il Baxter in laboratorio è terribilmente più veloce di quello simulato. Per ridurre la velocità del Baxter reale, usa lo script nel package ROS *\human_baxter_collaboration\scripts\joint_trajectory_client.py*.
 
-```bash
-ROS-Unity Handshake received, will connect to 192.168.65.2:5005
-```
+    ```python
+    # da riga 86
+    def trajectory_callback(msg):
+        if(limb == msg.arm):
+            #rospy.sleep(5)
+            arm = msg.arm
+                
+            n = len(msg.trajectory)
+            close_gripper_idx = 1
+            open_gripper_idx = 4
+            wait_before_opening =  1
+            
+            for i in range(len(msg.trajectory)):
+                
+                traj = Trajectory(arm)
+                # Start with open gripper
+                if i == 0:
+                    traj.open_gripper()
+                    
+                rospy.on_shutdown(traj.stop)
+                # Command Current Joint Positions first
+                limb_interface = baxter_interface.limb.Limb(arm)
+                    
+                t = 1
+                for point in msg.trajectory[i].joint_trajectory.points:
+                        p = point.positions
+                        traj.add_point(p, t)
+                        t += 2.5 # QUESTO...
+                
+                traj.start()
+                traj.wait(t + 1) # ... E QUESTO
+                # Close gripper on grasping
+                if i == close_gripper_idx:
+                    rospy.sleep(1)
+                    traj.close_gripper()
+                # Reopen gripper on release
+                elif i == open_gripper_idx:
+                    rospy.sleep(wait_before_opening)
+                    traj.open_gripper()
+                    rospy.sleep(1)
 
-Launch the Unity environment, then "play"→ start simulation.
+            print("Joint Trajectory Action Complete")
+    ```
 
-Here you can launch all the components of our project. Make sure the simulation is running before launching these components.
+    Lo stesso script server per gestire i gripper:
 
-First of all, launch `baxter_at_home` node:
+    ```python
+    # da riga 86
+    n = len(msg.trajectory)
+    close_gripper_idx = 1 # Numero di traiettorie date dopo il quale aprire il gripper
+    open_gripper_idx = 4 # Stessa cosa, per chiudere il gripper
+    wait_before_opening =  1
+    ```
 
-```bash
-rosrun controller_baxter baxter_at_home > /dev/null &
-```
-
-Then, launch the node `controller_baxter` which allows the robot to move:
-
-```bash
-rosrun controller_baxter controller_baxter > /dev/null & 
-```
-
-Last step: launch the task manager. After this, the robot will immediately start moving.
-
-```bash
-rosrun controller_baxter task_manager.py
-```
-
-## Time to Practice!
-
-In case it is not possible to set up the project here we provided two small video experiments for our project.
-
-- Test 1, using `unity_tf` topic
-
-    [BAXTER-FINAL-unity.mp4](https://drive.google.com/file/d/1bliD6EbrQrFFnVxbXdXl74VSJtnRRKKW/view?usp=sharing)
-
-- Test 2, using `tf` topic
-
-    [BAXTER-FINAL-tf.mp4](https://drive.google.com/file/d/1p-_naDokhO7L7R_C7RtqwC0Slp7nUhX5/view?usp=sharing)
-
-# Configuring the task manager
-
-In the folder `controller_baxter/include/controller_baxter/sim_infos.py` you can find all the settings needed in order to let the task manager reasoning on the situation, and other parameters. Here is a little explaination of the most important ones. 
-
-## Channels
-
-- `use_unity`: if true, the task manager directly uses the topic `unity_tf` as source; otherwise, `tf` is used. This parameter was added thinking on the real robot implementation. 
-If you don't need somethin special, i suggest you to set this as `True`: so you'll get the best performances.
-- `topic_unity_tf`, `topic_tf`: names of the source topics of the task manager. You're not supposed to modify these parameters.
-- `server_movement_controller`, `server_baxter_at_home`: names of the two services used by the controller. Don't modify.
-
-## Logging
-
-Each time the node receives a new message from the source topic, a counter is incremented. This counter let you to manage how many messages wait before a log. 
-
-- `log_freq`: how many messages before a short log
-- `log_freq_extended`: how many messages before an extended log. All the positions of the bocks are printed on the screen.
-- `use_verbose`: useful in debugging. If `True`, you can see all the results of the intermediate evaluations. This coul help if you think there could be some problems. *Pay attention: sometimes this kind of log could gve some wrong informations*. Please be stick to the code if you want to use such logging mode.
-
-## Object sizes
-
-- `sz_cube`: size of a cube. All the blocks are equal.
-- `sz_hand`: "radius" of the hand
-- `sz_goal`: size of the goal box. 
-sz_goal[0]: size along x (along the longest side of the table)
-sz_goal[2]: size along z (orthogonal, on the plane, towards the human operator)
-- `sz_table`: size of the table. 
-sz_tablel[0]: size along x (along the longest side of the table)
-sz_table[2]: size along z (orthogonal, on the plane, towards the human operator)
-
-## Alert Distances
-
-- `minimum_distance_parallel`: the task manager prefers the parallel execution is the bocks are too close, in order to avoid any collision by grippers. See our report for more informations.
-- `center_dispacement`: the distance from the center of the table to which the controller_baxter node put the block on the left. See the report.
+- Il nodo *baxter_at_home* potrebbe essere inutile, perchè attualmente il gripper non ha bisogno di tornare alla posizione di partenza. Due soluzioni sono possibili in questo caso: 1)modificare il *controller_baxter* in modo che il robot torni sempre alla posizione di partenza al termine del task 2)proseguire il movimento anche senza tornare a casa, il che implica delle modifiche al feedback del *task_manager*, usando le tf al posto della rest position. Modifica semplice, a patto di trovare il frame che si muove quando il braccio si muove. 

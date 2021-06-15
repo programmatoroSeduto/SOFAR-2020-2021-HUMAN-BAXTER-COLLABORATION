@@ -1,31 +1,3 @@
-/** @ package controller_baxter
-* 
-*  \file controller_baxter.cpp
-*  \brief this file implements the generation of the trajectory
-*
-*  \author Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi
-*  \version 1.0
-*  \date 12/06/2021
-*  \details
-* 
-*  Subscribes to: <BR>
-*	 unity_tf
-*
-*  Publishes to: <BR>
-*	 baxter_moveit_trajectory
-*
-*  Services: <BR>
-*    controller_server
-*
-*  Description: <BR>
-*  	This node implements a server that receives as input which arm needs to move,
-*   which block and where it needs to put the block. It sets all the information and then it 
-*   calculates the trajectory with moveit. The trajectory is divided in 
-*   5 phases: it first moves the gripper above the block, it moves down to pick the 
-*   block, it moves above the block again, it moves on top of the goal and it
-*   goes down to the goal. 
-*/
-
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <tf2_msgs/TFMessage.h>
@@ -79,15 +51,8 @@ Pose pose_of_block(string block_name);
 bool move_block_to_switchpoint(string block_name,MoveGroupInterface *group);
 Pose final_pose_of_block(string block_name);
 void initialize_joints();
+double grad_to_rad(double grad);
 
-/**
- * \brief: Main function 
- * \param argc, argv
- * \retval: 0
- * 
- * It initializes the ros node and all the needed subscribers and publishers,
- * it also initializes the server
- */
 int main(int argc, char** argv)
 {
 // Initialize the ROS Node
@@ -130,16 +95,12 @@ spinner.stop();
 return 0;
 }
 
-/**
- * \brief: moves the block
- * \param block_name : the name of the block I want to move
- * \param str_final_pos : where I want to put the block
- * \retval: it returns true if we were able to complete the movement or false if not
- * 
- * it moves the block to a given target by dividing the trajectory in 
- * 5 phases. At the end, after setting the trajectory, the start position 
- * of the robot is set as the start position.
- */
+/***
+ * @brief : This function moves a block to a given target
+ * @param block_name : the name of the block I want to move
+ * @param str_final_pos : where I want to put the block
+ * @retval : it returns true if we were able to complete the movement or false if not
+ ***/
 bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos)
 {
   Pose final_target;
@@ -258,21 +219,42 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
   // I save the tracjectory in a queue
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   
+  if(str_final_pos=="center"){
+      vector<double> joint_position;
+      // set the joint positions
+      joint_position.push_back(grad_to_rad(0.5));
+      joint_position.push_back(grad_to_rad(-57));
+      joint_position.push_back(grad_to_rad(68));
+      joint_position.push_back(grad_to_rad(110));
+      joint_position.push_back(grad_to_rad(-38));
+      joint_position.push_back(grad_to_rad(59));
+      joint_position.push_back(grad_to_rad(29));
+
+
+      // I calculate the trajectory for the right arm
+      group->setJointValueTarget(joint_position);
+      success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
+      ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
+      // If I don't have a feasible trajectory
+      if(!success)printf("ERROR");
+      my_trajectory.trajectory.push_back(my_plan.trajectory_);
+      update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
+
+  }
   // I publish the trajectory to be executed
   trajectory_pub.publish(my_trajectory);
   
   // I update the start state with the home
-  update_start_state_at_home();
+  //update_start_state_at_home();
+  update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
   return true;
 }
 
-/**
- * \brief: finds the position of a block
- * \param block_name : the block I want to know the pose of
- * \retval: the Pose 
- * 
- * Depending on the name of the block given as input it returns the position
- */
+/***
+ * @brief : This function retrieves the position of a block
+ * @param block_name : the block I want to know the pose of
+ * @retval : the Pose 
+ ***/
 Pose pose_of_block(string block_name){
   // I check which box I want the pose of
   if(block_name=="E"){
@@ -307,14 +289,11 @@ Pose pose_of_block(string block_name){
   }
 }
 
-/**
- * \brief: the final position of a block
- * \param block_name : the block I want to know the pose of
- * \retval: the Pose 
- * 
- * Depending on the name passed as input it returns where the final position should be.
- * the final position is different in each box in order to have them organized
- */
+/***
+ * @brief : This function retrieves the final position of a block
+ * @param block_name : the block I want to know the pose of
+ * @retval : the Pose 
+ ***/
 Pose final_pose_of_block(string block_name){
   // I check which box I want the final pose of
   if(block_name=="E"){
@@ -349,14 +328,11 @@ Pose final_pose_of_block(string block_name){
   }
 }
 
-/**
- * \brief: This function is called when you data are published on the topic unity_tf
- * \param msgs : the new data retrieved
- * \retval: none
- * 
- * After receiving the data on the tf callback I divide them and save them
- * in the correct global variable.
- */
+/***
+ * @brief : This function is called when you data are published on the topic unity_tf
+ * @param msgs : the new data retrieved
+ * @retval : none
+ ***/
 void tf_callback(const human_baxter_collaboration::UnityTf& msg)
 {
   // for the lenght og the message I save the frames in the corresponding box variable
@@ -435,24 +411,25 @@ void tf_callback(const human_baxter_collaboration::UnityTf& msg)
 }
 
 
-/**
- * \brief: This function is called to convert from radians to degrees
- * \param rad: the angle in radians
- * \retval: the angle in degrees
- */
+/***
+ * @brief : This function is called to convert from radians to degrees
+ * @param rad: the angle in radians
+ * @retval : the angle in degrees
+ ***/
 double rad_to_grad(double rad)
 {
 return rad*180/3.1415;
 }
 
-
-/**
- * \brief:updates the start state of the robot
- * \param none
- * \retval: none
- * 
- * It sets the start state of the robot for the planning of the trajectory
- */
+double grad_to_rad(double grad)
+{
+return (grad*3.1415)/180;
+}
+/***
+ * @brief : This function is called periodically and updates the start state of the robot
+ * @param none
+ * @retval : none
+ ***/
 void update_start_state_at_home(){
   
   //Updating the right arm: it retrieves the current position and sets it as the start state
@@ -470,11 +447,11 @@ void update_start_state_at_home(){
 }
 
 
-/**
- * \brief: prints the current position of an object
- * \param po: the position of the object I want to print
- * \retval: none
- */
+/***
+ * @brief : This function prints the current position of an object
+ * @param po: the position of the object I want to print
+ * @retval : none
+ ***/
 void stampa_Pose(Pose po)
 {
   cout<<"Position"<<endl<<"X:"<<po.position.x<<endl<<"Y:"<<po.position.y<<endl<<"Z:"<<po.position.z<<endl;
@@ -490,15 +467,12 @@ void stampa_Pose(Pose po)
   cout<<"r0:"<<rad_to_grad(r0)<<" p0:"<<rad_to_grad(p0)<<" y0:"<<rad_to_grad(y0);
 }
 
-/**
- * \brief: This function updates the start state of the robot
- * \param last_trajectory : last trajectory calculated
- * \param group : which moveit group is moving
- * \retval: none
- * 
- * It sets the start configuration of the robot to the one that would be when 
- * the robot is done executing the trajectory
- */
+/***
+ * @brief : This function updates the start state of the robot
+ * @param last_trajectory : last trajectory calculated
+ * @param group : which moveit group is moving
+ * @retval : none
+ ***/
 void update_start_state_after_trajectory_execution(moveit_msgs::RobotTrajectory last_trajectory,MoveGroupInterface *group){
   // I retrieve the current state of the robot
   printf("updating state \n");
@@ -511,15 +485,12 @@ void update_start_state_after_trajectory_execution(moveit_msgs::RobotTrajectory 
   printf("state updated \n");
 }
 
-/**
- * \brief: This function is called when a server request arrives
- * \param req : the command request
- * \param res : the command response
- * \retval: true
- * 
- * The server callback, it calls the move_block function that actually 
- * implements the movement after setting the correct parameters
- */
+/***
+ * @brief : This function is called when a server request arrives
+ * @param req : the command request
+ * @param res : the command response
+ * @retval : true
+ ***/
 bool server_callback(controller_baxter::command::Request &req,controller_baxter::command::Response &res){
   
   res.ok=false;	
@@ -535,27 +506,27 @@ bool server_callback(controller_baxter::command::Request &req,controller_baxter:
   return true;
 }
 
-/**
- * \brief: initializes the joint positions
- * \param None
- * \retval: None
- */
+/***
+ * @brief : This function initializes the joint positions
+ * @param None
+ * @retval : None
+ ***/
 void initialize_joints(){
-left_arm_msg_joint.position.push_back(-0.52);
-left_arm_msg_joint.position.push_back(-1.22);
-left_arm_msg_joint.position.push_back(0);
-left_arm_msg_joint.position.push_back(1.72);
-left_arm_msg_joint.position.push_back(0);
-left_arm_msg_joint.position.push_back(0.75);
-left_arm_msg_joint.position.push_back(0);
+left_arm_msg_joint.position.push_back(grad_to_rad(-0.5));
+left_arm_msg_joint.position.push_back(grad_to_rad(-57));
+left_arm_msg_joint.position.push_back(grad_to_rad(-68));
+left_arm_msg_joint.position.push_back(grad_to_rad(110));
+left_arm_msg_joint.position.push_back(grad_to_rad(38));
+left_arm_msg_joint.position.push_back(grad_to_rad(59));
+left_arm_msg_joint.position.push_back(grad_to_rad(-29));
 
-right_arm_msg_joint.position.push_back(0.52);
-right_arm_msg_joint.position.push_back(-1.22);
-right_arm_msg_joint.position.push_back(0);
-right_arm_msg_joint.position.push_back(1.72);
-right_arm_msg_joint.position.push_back(0);
-right_arm_msg_joint.position.push_back(0.75);
-right_arm_msg_joint.position.push_back(0);
+right_arm_msg_joint.position.push_back(grad_to_rad(0.5));
+right_arm_msg_joint.position.push_back(grad_to_rad(-57));
+right_arm_msg_joint.position.push_back(grad_to_rad(68));
+right_arm_msg_joint.position.push_back(grad_to_rad(110));
+right_arm_msg_joint.position.push_back(grad_to_rad(-38));
+right_arm_msg_joint.position.push_back(grad_to_rad(59));
+right_arm_msg_joint.position.push_back(grad_to_rad(29));
 }
 
 /*
