@@ -1,53 +1,53 @@
 #!/usr/bin/env python
 
-## --------------------------- ALTRI PARAMETRI
+## --------------------------- OTHER PARAMETERS
 
-# frequenza del task manager
+# frequency of the task manager
 task_manager_freq = 2
 
-# frequenza del log da Unity
-#    ogni quanti messaggi ritornare un'informazione sul topic unity_tf
-#    NOTA: usando tf normale, serve anche la 'use_verbose' altrimenti non verrà stampato nulla
+# frequency of the log from unity
+#    how many messages before returning un information on the topic unity_tf
+#    NOTE: using the normal tf, it is needed the use of 'use_verbose' otherwise nothing will be printed
 log_freq = 250
 
-# frequenza del log completo da Unity
-#    ogni quanti messaggi ritornare un'informazione sul topic unity_tf
-#    NOTA: usando tf normale, serve anche la 'use_verbose' altrimenti non verrà stampato nulla
+# frequency of the complete log from unity
+#    how many messages before returning un information on the topic unity_tf
+#    NOTE: using the normal tf, it is needed the use of 'use_verbose' otherwise nothing will be printed
 log_freq_extended = 1000000
 
-# distanza minima che i due blocchi devono avere per l'esecuzione parallela
+# minimum distance two blocks must have for the parallel execution
 minimum_distance_parallel = 0.5
 
-# scostamento della posizione del blocco dal centro
+# deviation of the position of the block in the center
 center_dispacement = 0.5
 
-# usare il topic da Unity? O direttamente quello da tf?
+# if we want to use the topic from unity or directly from tf
 use_unity = False
 
-# modalità "verbose": stampa log dettagliato su consolle
+# "verbose" modality: print detailed log on consolle
 use_verbose = False
 
 
 
-## --------------------------- DIMENSIONI OGGETTI
+## --------------------------- OBJECT DIMENSION
 
-# lato del cubetto (tutti i lati uguali)
+# size of the side of the block (all sides are equal)
 sz_cube = 0.05
 
-# dimensioni x e y del goal (x, y, z)
+# dimension x,y,z of the goal
 sz_goal = [ 0.14, 0.01, 0.221 ]
 
-# dimensioni del tavolo (x, y, z)
+# dimension of the table (x,y,z)
 sz_table = [ 2, 0.8, 1 ]
 
-# dimensioni della mano (soglia di allarme)
+# dimension of the hand, allarm size
 sz_hand = 0.3
 
 
 
-## --------------------------- NOMI
+## --------------------------- Names
 
-# mani
+# hands
 name_human_hand_right = "hand_r"
 name_human_hand_left = "hand_l"
 
@@ -58,9 +58,9 @@ name_goal_red = "Redbox"
 # server movement controller
 server_movement_controller = "controller_server"
 
-# server di baxter_at_home
+# server baxter_at_home
 server_baxter_at_home = "baxter_at_home_server"
 
-# canale da Unity
+# channel from Unity
 topic_unity_tf = "unity_tf"
 topic_tf = "tf"

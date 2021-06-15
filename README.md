@@ -6,17 +6,44 @@
 
 ## Prerequisites
 
-- The project uses the "vanilla" version of the Unity simulation, with no changes.
+- The project uses the "vanilla" version of the Unity simulation, with no changes. Link to the environment: [here](https://github.com/TheEngineRoom-UniGe/SofAR-Human-Robot-Collaboration.git). *Note well: we tried to make this work with no changes, so __if you modify this environment, the simulation couldn't properly work.__* 
 - Some packages are required in order to esecute the project in the simulated environment. You can find all you need in our repository, folder `dependencies`.
 
 ## How to set up the project
 
-In order to install the package::
+In order to install the package:
 
 1. create a workspace where to put the package. 
-2. Make sure you have the reuired components in order to make the project run! Copy all the packages in `dependencies` folder alongside with `controller_baxter`
+2. Make sure you have the reuired components in order to make the project run! 
 3. Put the folder *controller_baxter* into the *src* folder of your workspace
 4. then, build the workspace by `catkin_make`.
+
+Here are the references to the required packages.
+
+### DEPT -- MoveIt
+
+In order to install MoveIt, launch the following instruction:
+
+```bash
+sudo apt install ros-noetic-moveit
+```
+
+### DEPT -- human_baxter_collaboration - ros_tcp_endpoint - (Unity Project) Human-Robot-Collaboration
+
+You can find [here](https://github.com/TheEngineRoom-UniGe/SofAR-Human-Robot-Collaboration.git) the repository, containing all the tools for running the simulated Baxter. 
+
+- **ROS SIDE**: download the repository into your ROS environment, and then copy the entire content of the folder *ROS Packages* alongside with the *controller_baxter* package. You can also directly copy the folder itself into *src*: the system is capable of recognizing the package. 
+- **UNITY SIDE**: download the content of the folder *Unity Projects* wherever you want in your Host system, and open it with Unity. 
+
+### DEPT -- baxter_common
+
+You can find [here](https://github.com/RethinkRobotics/baxter_common) the package, which contains the description of Baxter. This is required in order to get the plan in MoveIt. 
+
+For installing it, simply go into your workspace, and then launch this command:
+
+```bash
+git clone https://github.com/RethinkRobotics/baxter_common.git -b master baxter_common
+```
 
 
 ## How to run the project
