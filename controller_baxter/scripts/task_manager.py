@@ -873,8 +873,10 @@ def main():
     rospy.loginfo( " [task manager] service: %s ... OK!", info.server_baxter_at_home )
     
     # wait for first update
-    while update_counter < 1:
+    rospy.loginfo( " [task manager] waiting for the first update... (bound: %d)", ( 1 if info.use_unity else 125 ) )
+    while update_counter < ( 1 if info.use_unity else 125 ):
         (rospy.Rate(1)).sleep()
+    rospy.loginfo( " [task manager] waiting for the first update... OK! " )
     
     labels = list(frame_block_blue.keys())
     for key in labels:
