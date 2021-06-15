@@ -1,6 +1,14 @@
 # SofAR 2020/2021 - HUMAN BAXTER COLLABORATION
 
-*Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi*
+*Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi* 
+- **Task Manager**: Francesco Ganci, Zoe Betta
+- **Controller Baxter**: Lorenzo Causa, Federico Zecchi
+- **Testing**: Francesco Ganci, Lorenzo Causa, Federico Zecchi
+- **Documentation**: Zoe betta, Francesco Ganci
+- **Documentation revision**: Francesco Ganci, Zoe Betta, Lorenzo Causa, Federico Zecchi
+- **GitHub repo maintainance**: Francesco Ganci
+
+Thanks to [Marco Gabriele Fedozzi]() for the Docker simulation environment, and to [Simone Macciò]() for the simulation environment and the ROS side packages. 
 
 # Setting up and Running the project
 
