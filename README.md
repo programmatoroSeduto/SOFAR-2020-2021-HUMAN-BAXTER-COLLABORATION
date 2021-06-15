@@ -7,7 +7,7 @@
 ## Prerequisites
 
 - The project uses the "vanilla" version of the Unity simulation, with no changes. Link to the environment: [here](https://github.com/TheEngineRoom-UniGe/SofAR-Human-Robot-Collaboration.git). *Note well: we tried to make this work with no changes, so __if you modify this environment, the simulation couldn't properly work.__* 
-- Some packages are required in order to esecute the project in the simulated environment. You can find all you need in our repository, folder `dependencies`.
+- Some packages are required in order to esecute the project in the simulated environment. See the following section.
 
 ## How to set up the project
 
