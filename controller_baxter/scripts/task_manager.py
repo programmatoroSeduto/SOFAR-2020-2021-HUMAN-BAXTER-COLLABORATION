@@ -637,17 +637,14 @@ def task_execute( task_right, task_left ):
 		return False
 	
 	# wait for baxter to start moving
-	'''
 	baxter_is_moving = False
 	rospy.loginfo( " [task manager] waiting for BAXTER to start movement..." )
 	while not baxter_is_moving:
 		baxter_is_moving = not ( ( srv_baxter_home( arm="right" ) ).at_home and ( srv_baxter_home( arm="left" ) ).at_home )
 	rospy.loginfo( " [task manager] BAXTER is moving; waiting for the tasks..." )
-	'''
 	
 	
 	# wait for the robto to reach the start position
-	'''
 	f = rospy.Rate( 10 )
 	while not ( right_at_home and left_at_home ):
 		# wait
@@ -664,10 +661,12 @@ def task_execute( task_right, task_left ):
 			req.arm = "left"
 			left_at_home = srv_baxter_home( req )
 			left_at_home = left_at_home.at_home
+	
 	'''
 	(rospy.Rate( 1/10 )).sleep()
 	right_at_home = True
 	left_at_home = True
+	'''
 	
 	baxter_is_moving = False
 	
