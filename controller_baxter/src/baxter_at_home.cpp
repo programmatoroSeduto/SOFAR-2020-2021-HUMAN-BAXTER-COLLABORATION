@@ -10,6 +10,13 @@
 #include "iostream"
 #include <tf/tf.h>
 
+#define veryclose( idx, val_grad ) ( very_close(messaggio_joint.position[idx],grad_to_rad(val_grad)) )
+
+double grad_to_rad(double grad)
+{
+return (grad*3.1415)/180;
+}
+
 //NAMESPACES
 using namespace std;
 using namespace moveit;
@@ -104,6 +111,33 @@ bool server_callback(controller_baxter::at_home::Request &req,controller_baxter:
  very_close(messaggio_joint.position[6],0))
 	{res.at_home=true;}
 	
+	/*
+	 * left_arm_msg_joint.position.push_back(grad_to_rad(-0.5));
+left_arm_msg_joint.position.push_back(grad_to_rad(-57));
+left_arm_msg_joint.position.push_back(grad_to_rad(-68));
+left_arm_msg_joint.position.push_back(grad_to_rad(110));
+left_arm_msg_joint.position.push_back(grad_to_rad(38));
+left_arm_msg_joint.position.push_back(grad_to_rad(59));
+left_arm_msg_joint.position.push_back(grad_to_rad(-29));
+
+right_arm_msg_joint.position.push_back(grad_to_rad(0.5));
+right_arm_msg_joint.position.push_back(grad_to_rad(-57));
+right_arm_msg_joint.position.push_back(grad_to_rad(68));
+right_arm_msg_joint.position.push_back(grad_to_rad(110));
+right_arm_msg_joint.position.push_back(grad_to_rad(-38));
+right_arm_msg_joint.position.push_back(grad_to_rad(59));
+right_arm_msg_joint.position.push_back(grad_to_rad(29));
+	 */
+if (req.arm=="left")
+{
+	res.at_home = ( veryclose(0, -0.5) && veryclose(1, -57) && veryclose(2, -68) && veryclose(3, 110) && veryclose(4, 38) && veryclose(5, 59) && veryclose(6, -29)  );
+}
+if (req.arm=="right")
+{
+	res.at_home = ( veryclose(0, 0.5) && veryclose(1, -57) && veryclose(2, 68) && veryclose(3, 110) && veryclose(4, -38) && veryclose(5, 59) && veryclose(6, 29)  );
+}
+
+	
  return true;	
 }
 
@@ -115,7 +149,7 @@ bool server_callback(controller_baxter::at_home::Request &req,controller_baxter:
  ***/
 bool very_close(double A ,double B){
 // checks if the distance is less than 0.01 in absolute value	
-if(A<B+00.1 && A>B-0.01)return true;
+if(A<B+0.01 && A>B-0.01)return true;
 return false;		
 }
 

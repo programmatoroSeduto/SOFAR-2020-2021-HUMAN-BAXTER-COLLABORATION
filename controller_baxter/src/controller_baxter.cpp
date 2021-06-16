@@ -219,8 +219,8 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
   // I save the tracjectory in a queue
   my_trajectory.trajectory.push_back(my_plan.trajectory_);
   
+  vector<double> joint_position;
   if(str_final_pos=="center"){
-      vector<double> joint_position;
       // set the joint positions
       joint_position.push_back(grad_to_rad(0.5));
       joint_position.push_back(grad_to_rad(-57));
@@ -230,17 +230,28 @@ bool move_block(string block_name,MoveGroupInterface *group,string str_final_pos
       joint_position.push_back(grad_to_rad(59));
       joint_position.push_back(grad_to_rad(29));
 
-
-      // I calculate the trajectory for the right arm
-      group->setJointValueTarget(joint_position);
-      success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
-      ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
-      // If I don't have a feasible trajectory
-      if(!success)printf("ERROR");
-      my_trajectory.trajectory.push_back(my_plan.trajectory_);
-      update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
-
   }
+  else
+  {
+      // set the joint positions
+      joint_position.push_back(grad_to_rad(-0.5));
+      joint_position.push_back(grad_to_rad(-57));
+      joint_position.push_back(grad_to_rad(-68));
+      joint_position.push_back(grad_to_rad(110));
+      joint_position.push_back(grad_to_rad(38));
+      joint_position.push_back(grad_to_rad(59));
+      joint_position.push_back(grad_to_rad(-29));
+  }
+  
+	// I calculate the trajectory for the right arm
+	group->setJointValueTarget(joint_position);
+	success = (group->plan(my_plan) == MoveItErrorCode::SUCCESS);
+	ROS_INFO_NAMED("tutorial", "Plan Result:%s", success ? "SUCCESS" : "FAILED");
+	// If I don't have a feasible trajectory
+	if(!success)printf("ERROR");
+	my_trajectory.trajectory.push_back(my_plan.trajectory_);
+	update_start_state_after_trajectory_execution(my_plan.trajectory_,group);
+	
   // I publish the trajectory to be executed
   trajectory_pub.publish(my_trajectory);
   
